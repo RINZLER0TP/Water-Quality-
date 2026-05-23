@@ -1,3 +1,961 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============================================================
+   BASE GLOBAL
+   ============================================================ */
+@layer base {
+    html {
+        scroll-behavior: smooth;
+        height: 100%;
+    }
+
+    body {
+        font-family: 'Outfit', sans-serif;
+        @apply antialiased;
+        min-height: 100vh;
+    }
+}
+
+/* ============================================================
+   COMPONENTES WATER QUALITY
+   ============================================================ */
+@layer components {
+
+    /* ----------------------------------------------------------
+       FONDO PRINCIPAL DE LA APP (modo autenticado)
+    ---------------------------------------------------------- */
+    .water-app-bg {
+        background:
+            radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.06), transparent 40%),
+            radial-gradient(circle at 100% 100%, rgba(14, 165, 233, 0.06), transparent 40%),
+            #f8fafc;
+    }
+
+    /* ----------------------------------------------------------
+       SHELL / CONTENEDOR PRINCIPAL (fondo oscuro acuático)
+    ---------------------------------------------------------- */
+    .water-shell {
+        position: relative;
+        overflow: hidden;
+        background:
+            radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.24), transparent 30%),
+            radial-gradient(circle at 80% 20%, rgba(14, 165, 233, 0.22), transparent 28%),
+            linear-gradient(180deg, #020617 0%, #07111f 52%, #020617 100%);
+    }
+
+    /* Orbes decorativos que flotan en el fondo */
+    .water-orb {
+        position: absolute;
+        border-radius: 9999px;
+        filter: blur(12px);
+        opacity: 0.85;
+        pointer-events: none;
+        animation: drift 12s ease-in-out infinite;
+    }
+
+    .water-orb--soft {
+        animation-duration: 18s;
+        animation-direction: alternate-reverse;
+    }
+
+    /* Luces ambientales del water-shell */
+    .ambient {
+        position: absolute;
+        border-radius: 9999px;
+        pointer-events: none;
+        filter: blur(60px);
+        opacity: 0.18;
+    }
+
+    .ambient-a {
+        width: 340px;
+        height: 340px;
+        top: -60px;
+        left: -80px;
+        background: #38bdf8;
+    }
+
+    .ambient-b {
+        width: 280px;
+        height: 280px;
+        top: 30%;
+        right: -60px;
+        background: #0ea5e9;
+        opacity: 0.13;
+    }
+
+    .ambient-c {
+        width: 220px;
+        height: 220px;
+        bottom: -40px;
+        left: 30%;
+        background: #7dd3fc;
+        opacity: 0.10;
+    }
+
+    /* ----------------------------------------------------------
+       TARJETA / PANEL GLASSMORPHISM (Modo claro)
+    ---------------------------------------------------------- */
+    .water-panel {
+        position: relative;
+        overflow: hidden;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 12px 60px rgba(14, 165, 233, 0.08);
+    }
+
+    .water-panel::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: linear-gradient(135deg, rgba(240, 247, 255, 0.6), transparent 40%, rgba(224, 242, 254, 0.4));
+    }
+
+    /* Tarjeta secundaria (más sutil) */
+    .water-card {
+        position: relative;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.8), 0 4px 12px rgba(14, 165, 233, 0.04);
+        transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    }
+    .water-card:hover {
+        border-color: #bae6fd;
+        box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.8), 0 8px 24px rgba(14, 165, 233, 0.08);
+        transform: translateY(-2px);
+    }
+
+    /* ----------------------------------------------------------
+       BOTÓN PRINCIPAL
+    ---------------------------------------------------------- */
+    .water-button {
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 46%, #0369a1 100%);
+        color: #eff6ff;
+        border: none;
+        box-shadow: 0 18px 36px rgba(14, 165, 233, 0.28);
+        transition: transform 0.18s, box-shadow 0.18s, filter 0.18s;
+    }
+
+    .water-button::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.18) 50%, transparent 100%);
+        transform: translate(-120%);
+        animation: shimmer 4.5s ease-in-out infinite;
+    }
+
+    .water-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 22px 44px rgba(14, 165, 233, 0.32);
+        filter: saturate(1.05);
+    }
+
+    .water-button:active {
+        transform: translateY(0);
+    }
+
+    /* ----------------------------------------------------------
+       INPUT ESTILO WATER
+    ---------------------------------------------------------- */
+    .water-input {
+        background: rgba(2, 6, 23, 0.72);
+        border-color: rgba(71, 85, 105, 0.85);
+        border-radius: 0.9rem;
+        color: #f8fafc;
+        transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s, background-color 0.18s;
+    }
+
+    .water-input:focus {
+        background: rgba(3, 7, 18, 0.9);
+        border-color: #38bdf8;
+        transform: translateY(-1px);
+        box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.18);
+    }
+
+    /* ----------------------------------------------------------
+       LAYOUT DE DOS COLUMNAS (shell izq / contenido der)
+    ---------------------------------------------------------- */
+    .card {
+        display: grid;
+        gap: 0;
+        min-height: 560px;
+    }
+
+    @screen lg {
+        .card {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    .water-shell-left {
+        padding: 2.5rem 2rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 2rem;
+    }
+
+    .water-shell-right {
+        padding: 2rem 1.5rem;
+    }
+
+    @screen lg {
+        .water-shell-left {
+            padding: 3rem 2.5rem;
+        }
+
+        .water-shell-right {
+            padding: 2.5rem 2rem;
+        }
+    }
+
+    /* ----------------------------------------------------------
+       BRAND LOGO
+    ---------------------------------------------------------- */
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+    }
+
+    .brand-ico {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #38bdf8, #0369a1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 16px rgba(14, 165, 233, 0.4);
+        flex-shrink: 0;
+    }
+
+    .brand-txt {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #f0f9ff;
+        letter-spacing: -0.01em;
+    }
+
+    /* ----------------------------------------------------------
+       HERO (columna izquierda del shell)
+    ---------------------------------------------------------- */
+    .hero {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .hero-eyebrow {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        color: #7dd3fc;
+    }
+
+    .hero-h {
+        font-size: 1.9rem;
+        font-weight: 600;
+        line-height: 1.2;
+        color: #f0f9ff;
+        letter-spacing: -0.02em;
+    }
+
+    .hero-h b {
+        font-weight: 700;
+        background: linear-gradient(90deg, #38bdf8, #7dd3fc);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .hero-p {
+        font-size: 0.85rem;
+        line-height: 1.6;
+        color: #94a3b8;
+        max-width: 26rem;
+    }
+
+    /* ----------------------------------------------------------
+       CHIPS DE MÉTRICAS
+    ---------------------------------------------------------- */
+    .chips {
+        display: flex;
+        gap: 0.625rem;
+        flex-wrap: wrap;
+    }
+
+    .chip {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.2rem;
+        background: rgba(14, 165, 233, 0.1);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 1rem;
+        padding: 0.6rem 1rem;
+        min-width: 68px;
+        transition: background 0.2s, border-color 0.2s;
+    }
+
+    .chip:hover {
+        background: rgba(14, 165, 233, 0.16);
+        border-color: rgba(56, 189, 248, 0.35);
+    }
+
+    .chip-v {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #38bdf8;
+        line-height: 1;
+    }
+
+    .chip-l {
+        font-size: 0.6rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+
+    /* ----------------------------------------------------------
+       CABECERA DE FORMULARIO / SECCIÓN
+    ---------------------------------------------------------- */
+    .fhead {
+        margin-bottom: 1.5rem;
+    }
+
+    .ftag {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: #0ea5e9;
+        margin-bottom: 0.3rem;
+    }
+
+    .ftitle {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #f0f9ff;
+        letter-spacing: -0.02em;
+        line-height: 1.25;
+    }
+
+    .fsub {
+        font-size: 0.82rem;
+        color: #64748b;
+        margin-top: 0.25rem;
+        line-height: 1.55;
+    }
+
+    /* ----------------------------------------------------------
+       CURSOR PARPADEANTE (efecto de escritura)
+    ---------------------------------------------------------- */
+    .cursor {
+        display: inline-block;
+        width: 2px;
+        height: 1em;
+        background: #38bdf8;
+        margin-left: 2px;
+        vertical-align: middle;
+        border-radius: 1px;
+        animation: blink 0.9s step-end infinite;
+    }
+}
+
+/* ============================================================
+   ANIMACIONES
+   ============================================================ */
+@layer utilities {
+    .animation-delay-400 {
+        animation-delay: 0.4s;
+    }
+
+    .animation-delay-600 {
+        animation-delay: 0.6s;
+    }
+}
+
+@keyframes drift {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        transform: translateY(-14px) scale(1.05);
+    }
+}
+
+@keyframes shimmer {
+    0%, 45% {
+        transform: translate(-120%);
+    }
+    70%, 100% {
+        transform: translate(120%);
+    }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+}
+
+/* ============================================================
+   PÁGINA DE LOGIN / AUTH
+   ============================================================ */
+@layer components {
+
+    /* Fondo de la página auth */
+    .auth-body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 2rem;
+        background: #f0f7ff;
+    }
+
+    /* Canvas de partículas */
+    #particles {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    /* Tarjeta principal del login */
+    .card {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        width: 100%;
+        max-width: 1060px;
+        min-height: 600px;
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: 0 12px 60px rgba(14, 165, 233, 0.125);
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        opacity: 0;
+        transform: translateY(28px);
+        animation: cardIn 0.7s 0.1s cubic-bezier(0.22, 0.68, 0, 1.15) forwards;
+    }
+
+    /* Columna izquierda — degradado azul */
+    .left {
+        flex: 1;
+        background: linear-gradient(150deg, #075985 0%, #0ea5e9 52%, #06b6d4 100%);
+        padding: 3rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .left::before {
+        content: '';
+        position: absolute;
+        width: 340px;
+        height: 340px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.05);
+        top: -80px;
+        right: -80px;
+    }
+
+    .left::after {
+        content: '';
+        position: absolute;
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.03);
+        bottom: -50px;
+        left: -50px;
+    }
+
+    /* Columna derecha — formulario blanco */
+    .right {
+        width: 420px;
+        padding: 3rem 2.75rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        background: #fff;
+        overflow-y: auto;
+    }
+
+    /* Animaciones de entrada */
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: relative;
+        z-index: 1;
+        opacity: 0;
+        transform: translateY(12px);
+        animation: up 0.5s 0.4s ease forwards;
+    }
+
+    .brand-ico {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        background: rgba(255,255,255,0.13);
+        border: 1.5px solid rgba(255,255,255,0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .brand-txt {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 12px;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: #fff;
+        opacity: 0.9;
+    }
+
+    .hero {
+        position: relative;
+        z-index: 1;
+        opacity: 0;
+        transform: translateY(16px);
+        animation: up 0.55s 0.55s ease forwards;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .hero-eyebrow {
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #bae6fd;
+        margin-bottom: 0.9rem;
+        font-weight: 500;
+    }
+
+    .hero-h {
+        font-size: 2.5rem;
+        font-weight: 300;
+        color: #fff;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+        margin-bottom: 1rem;
+    }
+
+    .hero-h b {
+        font-weight: 600;
+    }
+
+    .cursor {
+        display: inline-block;
+        width: 3px;
+        height: 0.9em;
+        background: rgba(255,255,255,0.8);
+        vertical-align: middle;
+        margin-left: 3px;
+        border-radius: 1px;
+        animation: blink 1s ease-in-out infinite;
+    }
+
+    .hero-p {
+        font-size: 13.5px;
+        color: #bae6fd;
+        line-height: 1.75;
+        max-width: 300px;
+    }
+
+    /* Chips */
+    .chips {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 1;
+    }
+
+    .chip {
+        background: rgba(255,255,255,0.09);
+        border: 1px solid rgba(255,255,255,0.16);
+        border-radius: 12px;
+        padding: 12px 16px;
+        min-width: 90px;
+        opacity: 0;
+        transform: translateY(10px);
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        transition: background 0.2s, border-color 0.2s;
+    }
+
+    .chip:nth-child(1) { animation: up 0.4s 0.9s ease forwards; }
+    .chip:nth-child(2) { animation: up 0.4s 1.0s ease forwards; }
+    .chip:nth-child(3) { animation: up 0.4s 1.1s ease forwards; }
+
+    .chip-v {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 22px;
+        font-weight: 600;
+        line-height: 1;
+        color: #fff;
+    }
+
+    .chip-l {
+        font-size: 10px;
+        color: #bae6fd;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    /* Cabecera del formulario */
+    .fhead {
+        margin-bottom: 1.75rem;
+        opacity: 0;
+        transform: translateY(14px);
+        animation: up 0.5s 0.5s ease forwards;
+    }
+
+    .ftag {
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #0ea5e9;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .ftitle {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 26px;
+        font-weight: 600;
+        color: #0f172a;
+        letter-spacing: -0.025em;
+        margin-bottom: 0.4rem;
+    }
+
+    .fsub {
+        font-size: 13px;
+        color: #64748b;
+        line-height: 1.65;
+    }
+
+    /* Campos del formulario */
+    .field {
+        margin-bottom: 1rem;
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    .field:nth-child(2) { animation: up 0.45s 0.65s ease forwards; }
+    .field:nth-child(3) { animation: up 0.45s 0.75s ease forwards; }
+
+    .field label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.4rem;
+    }
+
+    .iw {
+        position: relative;
+    }
+
+    .iw input {
+        width: 100%;
+        background: #f8fafc;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.72rem 2.8rem 0.72rem 2.6rem;
+        font-family: 'Outfit', sans-serif;
+        font-size: 14px;
+        color: #0f172a;
+        outline: none;
+        transition: border-color 0.25s, box-shadow 0.25s, background 0.25s, transform 0.2s;
+    }
+
+    .iw input::placeholder {
+        color: #cbd5e1;
+    }
+
+    .iw input:focus {
+        border-color: #0ea5e9;
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.07);
+        transform: translateY(-1px);
+    }
+
+    .iico {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #cbd5e1;
+        pointer-events: none;
+        transition: color 0.25s;
+    }
+
+    .iw:focus-within .iico {
+        color: #0ea5e9;
+    }
+
+    .eye {
+        position: absolute;
+        right: 11px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #cbd5e1;
+        display: flex;
+        padding: 3px;
+        transition: color 0.2s;
+    }
+
+    .eye:hover {
+        color: #64748b;
+    }
+
+    /* Meta (recuérdame + olvidaste) */
+    .meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.4rem;
+        opacity: 0;
+        transform: translateY(10px);
+        animation: up 0.45s 0.85s ease forwards;
+    }
+
+    .chk {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        color: #64748b;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .chk input {
+        accent-color: #0ea5e9;
+        width: 15px;
+        height: 15px;
+        cursor: pointer;
+    }
+
+    .flink {
+        font-size: 13px;
+        color: #0ea5e9;
+        text-decoration: none;
+        font-weight: 500;
+        transition: opacity 0.2s;
+    }
+
+    .flink:hover {
+        opacity: 0.7;
+    }
+
+    /* Botón de submit */
+    .btn-wrap {
+        opacity: 0;
+        transform: translateY(10px);
+        animation: up 0.45s 0.95s ease forwards;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 0.88rem;
+        background: #0ea5e9;
+        border: none;
+        border-radius: 12px;
+        color: #fff;
+        font-family: 'Outfit', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.12s, box-shadow 0.2s;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 48px;
+    }
+
+    .btn:hover {
+        background: #0284c7;
+        box-shadow: 0 6px 24px rgba(14, 165, 233, 0.25);
+        transform: translateY(-1px);
+    }
+
+    .btn:active {
+        transform: scale(0.97);
+    }
+
+    .shine {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.15) 50%, transparent 65%);
+        transform: translateX(-100%);
+        transition: transform 0.45s;
+    }
+
+    .btn:hover .shine {
+        transform: translateX(100%);
+    }
+
+    .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255,255,255,0.25);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        display: none;
+        flex-shrink: 0;
+    }
+
+    /* Separador "o" */
+    .sep {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 1.1rem 0;
+        font-size: 12px;
+        color: #cbd5e1;
+        opacity: 0;
+        animation: up 0.4s 1.05s ease forwards;
+    }
+
+    .sep::before,
+    .sep::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #e2e8f0;
+    }
+
+    /* Registro */
+    .reg {
+        text-align: center;
+        font-size: 13px;
+        color: #94a3b8;
+        opacity: 0;
+        animation: up 0.4s 1.1s ease forwards;
+    }
+
+    .reg a {
+        color: #0ea5e9;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    /* Barra de estado */
+    .statusbar {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 11px;
+        color: #94a3b8;
+        letter-spacing: 0.05em;
+        margin-top: 1.5rem;
+        opacity: 0;
+        animation: up 0.4s 1.2s ease forwards;
+    }
+
+    .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #10b981;
+        flex-shrink: 0;
+        animation: blink 2s ease-in-out infinite;
+    }
+
+    /* Alerta de error */
+    .alert {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        padding: 0.65rem 1rem;
+        margin-bottom: 0.9rem;
+        font-size: 13px;
+        color: #dc2626;
+        display: none;
+    }
+
+    /* Fondo de la APP autenticada */
+    .water-app-bg {
+        background:
+            radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.06), transparent 40%),
+            radial-gradient(circle at 100% 100%, rgba(14, 165, 233, 0.06), transparent 40%),
+            #f8fafc;
+    }
+}
+
+/* ============================================================
+   ANIMACIONES
+   ============================================================ */
+@layer utilities {
+    .animation-delay-400 { animation-delay: 0.4s; }
+    .animation-delay-600 { animation-delay: 0.6s; }
+}
+
+@keyframes cardIn {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes up {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes drift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%       { transform: translateY(-14px) scale(1.05); }
+}
+
+@keyframes shimmer {
+    0%, 45% { transform: translate(-120%); }
+    70%, 100% { transform: translate(120%); }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%       { transform: translateX(-6px); }
+    40%       { transform: translateX(6px); }
+    60%       { transform: translateX(-4px); }
+    80%       { transform: translateX(4px); }
+}
