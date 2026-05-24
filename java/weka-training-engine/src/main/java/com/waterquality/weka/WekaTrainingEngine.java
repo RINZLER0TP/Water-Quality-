@@ -22,6 +22,7 @@ import weka.filters.unsupervised.attribute.StringToNominal;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
@@ -80,7 +81,8 @@ public class WekaTrainingEngine {
             data = loadCsvFromText(csvContent);
         } else {
             File csvFile = normalizePath(csvPath);
-            data = loadCsvWithRetry(csvFile, 5, 250L);
+            String csvContent = Files.readString(csvFile.toPath(), StandardCharsets.UTF_8);
+            data = loadCsvFromText(csvContent);
         }
 
         if (data.numAttributes() == 0) {
@@ -149,13 +151,30 @@ public class WekaTrainingEngine {
         String modelPath = required(options, "model");
         String csvPath = required(options, "csv"); // CSV con los datos a predecir
         String logPath = options.getOrDefault("log", "");
+        String targetColumn = options.getOrDefault("target", "Potability");
+        String trainingCsvPath = options.get("training-csv");
 
         long startedAt = System.currentTimeMillis();
 
         // Cargar el modelo pre-entrenado
         Classifier classifier = (Classifier) SerializationHelper.read(modelPath);
 
+        Instances trainingData = null;
+        if (trainingCsvPath != null && !trainingCsvPath.isBlank()) {
+            File trainingCsvFile = normalizePath(trainingCsvPath);
+            String trainingCsvContent = Files.readString(trainingCsvFile.toPath(), StandardCharsets.UTF_8);
+            trainingData = loadCsvFromText(trainingCsvContent);
+
+            int trainingClassIndex = attributeIndexByName(trainingData, targetColumn);
+            if (trainingClassIndex < 0) {
+                throw new IllegalStateException("No se encontró la columna objetivo en el CSV de entrenamiento: " + targetColumn);
+            }
+
+            trainingData.setClassIndex(trainingClassIndex);
+        }
+
         // Cargar los datos de prueba
+        System.out.println("DEBUG: csvPath is [" + csvPath + "]");
         Instances data;
         if ("stdin".equalsIgnoreCase(csvPath) || "-".equals(csvPath)) {
             String csvContent = new String(System.in.readAllBytes(), StandardCharsets.UTF_8);
@@ -175,22 +194,21 @@ public class WekaTrainingEngine {
             throw new IllegalStateException("El CSV no contiene instancias para predecir.");
         }
 
-        // Asumimos que la última columna es la clase objetivo (como en el entrenamiento)
-        // O podemos buscarla si es enviada. En Weka es obligatorio tener el atributo clase,
-        // aunque su valor sea '?'.
-        String targetColumn = options.getOrDefault("target", "Potability");
-        int classIndex = attributeIndexByName(data, targetColumn);
-        if (classIndex < 0) {
-            // Si el CSV de predicción no incluye la columna Potability, Weka fallará por 
-            // incompatibilidad de cabeceras. El CSV generado DEBE incluir la columna objetivo.
-            throw new IllegalStateException("No se encontró la columna objetivo en el CSV de predicción: " + targetColumn);
-        }
-        data.setClassIndex(classIndex);
+        if (trainingData != null) {
+            data = alignPredictionData(trainingData, data, targetColumn);
+        } else {
+            // Asumimos que la última columna es la clase objetivo (como en el entrenamiento)
+            // O podemos buscarla si es enviada. En Weka es obligatorio tener el atributo clase,
+            // aunque su valor sea '?'.
+            int classIndex = attributeIndexByName(data, targetColumn);
+            if (classIndex < 0) {
+                // Si el CSV de predicción no incluye la columna Potability, Weka fallará por
+                // incompatibilidad de cabeceras. El CSV generado DEBE incluir la columna objetivo.
+                throw new IllegalStateException("No se encontró la columna objetivo en el CSV de predicción: " + targetColumn);
+            }
 
-        StringToNominal stringToNominal = new StringToNominal();
-        stringToNominal.setAttributeRange("first-last");
-        stringToNominal.setInputFormat(data);
-        data = Filter.useFilter(data, stringToNominal);
+            data.setClassIndex(classIndex);
+        }
 
         // Tomar la primera instancia
         Instance instance = data.instance(0);
@@ -285,6 +303,67 @@ public class WekaTrainingEngine {
         }
 
         return -1;
+    }
+
+    private static Instances alignPredictionData(Instances trainingData, Instances inputData, String targetColumn) {
+        Instances alignedData = new Instances(trainingData, 1);
+        alignedData.setClassIndex(trainingData.classIndex());
+
+        Instance inputInstance = inputData.instance(0);
+        Instance alignedInstance = new DenseInstance(trainingData.numAttributes());
+        alignedInstance.setDataset(alignedData);
+
+        for (int index = 0; index < trainingData.numAttributes(); index++) {
+            Attribute targetAttribute = trainingData.attribute(index);
+
+            if (targetAttribute.name().equals(targetColumn)) {
+                alignedInstance.setMissing(targetAttribute);
+                continue;
+            }
+
+            int sourceIndex = attributeIndexByName(inputData, targetAttribute.name());
+            if (sourceIndex < 0) {
+                throw new IllegalStateException("No se encontró el atributo requerido para la predicción: " + targetAttribute.name());
+            }
+
+            Attribute sourceAttribute = inputData.attribute(sourceIndex);
+
+            if (inputInstance.isMissing(sourceAttribute)) {
+                alignedInstance.setMissing(targetAttribute);
+                continue;
+            }
+
+            if (targetAttribute.isNumeric()) {
+                alignedInstance.setValue(targetAttribute, inputInstance.value(sourceAttribute));
+                continue;
+            }
+
+            String stringValue = inputInstance.stringValue(sourceAttribute).trim();
+            if (stringValue.isEmpty()) {
+                alignedInstance.setMissing(targetAttribute);
+                continue;
+            }
+
+            if (targetAttribute.isNominal()) {
+                if (targetAttribute.indexOfValue(stringValue) < 0) {
+                    throw new IllegalStateException("El valor '" + stringValue + "' no es válido para el atributo " + targetAttribute.name());
+                }
+
+                alignedInstance.setValue(targetAttribute, stringValue);
+                continue;
+            }
+
+            if (targetAttribute.isString()) {
+                alignedInstance.setValue(targetAttribute, stringValue);
+                continue;
+            }
+
+            throw new IllegalStateException("Tipo de atributo no soportado para la predicción: " + targetAttribute.name());
+        }
+
+        alignedData.add(alignedInstance);
+
+        return alignedData;
     }
 
     private static String buildPredictSuccessJson(String predictedClass, double confidence, long executionTimeMs) {
@@ -476,7 +555,7 @@ public class WekaTrainingEngine {
                 Attribute attribute = attributes.get(columnIndex);
                 String value = columnIndex < row.size() ? row.get(columnIndex).trim() : "";
 
-                if (value.isEmpty()) {
+                if (value.isEmpty() || "?".equals(value)) {
                     instance.setMissing(attribute);
                     continue;
                 }

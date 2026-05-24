@@ -10,6 +10,7 @@ use App\Models\TrainingJob;
 use App\Repositories\Interfaces\PredictionRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 
 class PredictionController extends Controller
 {
@@ -37,6 +38,11 @@ class PredictionController extends Controller
 
     public function store(StorePredictionRequest $request, RunPredictionAction $action)
     {
+        Log::info('Prediction store hit', [
+            'user_id' => $request->user()?->id,
+            'training_job_id' => $request->training_job_id,
+        ]);
+
         $job = TrainingJob::findOrFail($request->training_job_id);
         
         try {
