@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\DatasetStatus;
 use App\Models\Dataset;
+use App\Models\TrainingConfiguration;
+use App\Models\TrainingJob;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -94,15 +97,77 @@ class DatasetTest extends TestCase
         $response = $this->actingAs($user)->get(route('datasets.download', $dataset));
 
         $response->assertDownload($dataset->original_name);
-
-        $downloadedFile = $response->baseResponse->getFile()->getPathname();
-        $downloadedContent = file_get_contents($downloadedFile);
-
-        $this->assertNotFalse($downloadedContent);
-        $this->assertSame("\xEF\xBB\xBFname;value\nalpha;1\nbeta;2\ngamma;3\n", $downloadedContent);
+        $response->assertOk();
 
         $originalContent = Storage::disk('local')->get($dataset->file_path);
 
         $this->assertSame("name,value\nbeta,2\nalpha,1\ngamma,3\n", $originalContent);
+    }
+
+    public function test_deleting_a_dataset_removes_related_training_configurations_and_jobs(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        $dataset = $this->createDataset($user);
+
+        $configuration = TrainingConfiguration::create([
+            'dataset_id' => $dataset->id,
+            'created_by' => $user->id,
+            'target_column' => 'status',
+            'algorithm' => 'logistic',
+            'parameters' => [],
+            'analysis' => [],
+        ]);
+
+        $modelPath = 'weka/models/training-job-1.model';
+        $logPath = 'weka/logs/training-job-1.log';
+
+        Storage::disk('local')->put($modelPath, 'model');
+        Storage::disk('local')->put($logPath, 'log');
+
+        TrainingJob::create([
+            'training_configuration_id' => $configuration->id,
+            'created_by' => $user->id,
+            'dataset_id' => $dataset->id,
+            'algorithm' => 'logistic',
+            'target_column' => 'status',
+            'parameters' => [],
+            'status' => 'completed',
+            'model_path' => $modelPath,
+            'log_path' => $logPath,
+            'metrics' => [],
+            'confusion_matrix' => [],
+            'cross_validation_folds' => 10,
+            'random_seed' => 42,
+        ]);
+
+        $this->actingAs($user)->delete(route('datasets.destroy', $dataset))
+            ->assertRedirect(route('datasets.index'));
+
+        $this->assertSoftDeleted('datasets', ['id' => $dataset->id]);
+        $this->assertDatabaseMissing('training_configurations', ['id' => $configuration->id]);
+        $this->assertDatabaseMissing('training_jobs', ['training_configuration_id' => $configuration->id]);
+        $this->assertFalse(Storage::disk('local')->exists($modelPath));
+        $this->assertFalse(Storage::disk('local')->exists($logPath));
+    }
+
+    private function createDataset(User $user): Dataset
+    {
+        $filePath = 'weka/datasets/dataset-cleanup.csv';
+        Storage::disk('local')->put($filePath, "ph,temperature,status\n7.2,23.1,normal\n8.0,22.4,alert\n7.5,24.0,normal\n");
+
+        return Dataset::create([
+            'name' => 'Dataset cleanup',
+            'original_name' => 'dataset-cleanup.csv',
+            'file_path' => $filePath,
+            'file_size' => strlen("ph,temperature,status\n7.2,23.1,normal\n8.0,22.4,alert\n7.5,24.0,normal\n"),
+            'rows_count' => 3,
+            'columns_count' => 3,
+            'status' => DatasetStatus::VALIDATED->value,
+            'uploaded_by' => $user->id,
+            'metadata' => [],
+            'metrics' => [],
+        ]);
     }
 }

@@ -32,25 +32,25 @@
 
                 <div class="water-panel rounded-[24px] p-6 transition-transform hover:-translate-y-1">
                     <div class="flex justify-between items-start">
-                        <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-sky-500">Modelos IA</div>
+                        <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-sky-500">Configuraciones IA</div>
                         <div class="p-2 bg-sky-50 rounded-xl text-sky-500">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         </div>
                     </div>
-                    <div class="mt-4 text-4xl font-semibold text-slate-900 font-['Space_Grotesk']">{{ $modelsCount }}</div>
-                    <div class="mt-2 text-xs font-medium text-slate-500">Entrenados con Weka</div>
+                    <div class="mt-4 text-4xl font-semibold text-slate-900 font-['Space_Grotesk']">{{ $trainingConfigurationsCount }}</div>
+                    <div class="mt-2 text-xs font-medium text-slate-500">Snapshots listos para entrenar</div>
                 </div>
 
                 <div class="water-panel rounded-[24px] p-6 relative overflow-hidden transition-transform hover:-translate-y-1">
                     <div class="absolute inset-0 bg-gradient-to-br from-sky-500 to-cyan-400 opacity-[0.03]"></div>
                     <div class="flex justify-between items-start relative z-10">
-                        <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-sky-500">Precisión global</div>
+                        <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-sky-500">Accuracy media</div>
                         <div class="p-2 bg-sky-500 text-white rounded-xl shadow-lg shadow-sky-200">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         </div>
                     </div>
-                    <div class="mt-4 text-4xl font-semibold text-sky-600 font-['Space_Grotesk'] relative z-10">{{ $accuracy }}%</div>
-                    <div class="mt-2 text-xs font-medium text-slate-500 relative z-10">Esperando datos Weka</div>
+                    <div class="mt-4 text-4xl font-semibold text-sky-600 font-['Space_Grotesk'] relative z-10">{{ $averageAccuracy !== null ? number_format($averageAccuracy, 2) . '%' : 'n/d' }}</div>
+                    <div class="mt-2 text-xs font-medium text-slate-500 relative z-10">{{ $completedTrainingJobsCount > 0 ? 'Promedio de jobs completados' : 'Sin jobs completados aún' }}</div>
                 </div>
 
                 <div class="water-panel rounded-[24px] p-6 transition-transform hover:-translate-y-1 border-amber-100 shadow-[0_12px_60px_rgba(245,158,11,0.05)]">
@@ -65,65 +65,28 @@
                 </div>
             </div>
 
-            {{-- Paneles Inferiores --}}
-            <div class="grid gap-6 lg:grid-cols-[1.2fr_.8fr]">
-                {{-- Acciones y Flujos --}}
-                <div class="water-panel rounded-[32px] p-8 flex flex-col justify-between">
-                    <div>
-                        <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-sky-500">Gestión Operativa</div>
-                        <h3 class="mt-2 text-2xl font-semibold text-slate-900 font-['Space_Grotesk']">Flujos principales</h3>
-                        <p class="mt-2 text-sm text-slate-500 max-w-md">Ejecuta las tareas más comunes de tu pipeline de aprendizaje automático para análisis de calidad de agua.</p>
-                    </div>
+            <div class="water-card rounded-[32px] p-8">
+                <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-sky-500">Resumen reciente</div>
+                <h3 class="mt-2 text-xl font-semibold text-slate-900 font-['Space_Grotesk']">Actividad reciente</h3>
 
-                    <div class="mt-8 grid gap-4 sm:grid-cols-2">
-                        <x-water-button href="{{ route('datasets.index') }}" class="w-full justify-center">Ver todos los datasets</x-water-button>
-                        <x-water-button href="{{ route('datasets.create') }}" class="w-full justify-center">Cargar nuevo CSV</x-water-button>
-
-                        <a href="{{ route('training-configurations.create') }}" class="sm:col-span-2 mt-2 group rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/80 to-cyan-50/70 p-6 flex items-center justify-between transition-all hover:-translate-y-0.5 hover:border-sky-200 hover:bg-sky-50 hover:shadow-[0_16px_40px_rgba(14,165,233,0.12)]">
-                            <div class="space-y-1">
-                                <div class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-600 ring-1 ring-sky-100">
-                                    Nuevo
-                                </div>
-                                <div class="font-semibold text-slate-900 group-hover:text-sky-700 transition-colors">Entrenar nuevo modelo IA</div>
-                                <div class="text-xs text-slate-500 mt-1 max-w-xl">Abre la pantalla de configuración, carga el preview real del CSV y define target, algoritmo y parámetros antes de pasar al pipeline de Weka.</div>
-                            </div>
-                            <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-sky-500 shadow-sm transition-transform group-hover:scale-110 group-hover:text-sky-600">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-
-                {{-- Actividad --}}
-                <div class="water-card rounded-[32px] p-8">
-                    <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-sky-500">Bitácora</div>
-                    <h3 class="mt-2 text-xl font-semibold text-slate-900 font-['Space_Grotesk']">Actividad reciente</h3>
-
-                    <div class="mt-8 space-y-6 relative before:absolute before:inset-0 before:ml-2 md:before:mx-0 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
-                        
+                <div class="mt-8 grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
+                    <div class="space-y-4">
                         @forelse($recentActivity as $activity)
-                            <div class="relative flex items-start gap-4">
-                                <div class="z-10 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-cyan-400 ring-4 ring-white mt-1"></div>
-                                <div>
-                                    <div class="text-sm font-semibold text-slate-900">Dataset `{{ $activity->original_name }}` cargado</div>
-                                    <div class="text-xs font-medium text-slate-500 mt-0.5">{{ $activity->created_at->diffForHumans() }} · {{ $activity->status }}</div>
-                                </div>
+                            <div class="rounded-2xl border border-slate-100 bg-white p-4">
+                                <div class="text-sm font-semibold text-slate-900">Dataset {{ $activity->original_name }}</div>
+                                <div class="mt-1 text-xs font-medium text-slate-500">{{ $activity->created_at->diffForHumans() }} · {{ $activity->status }}</div>
                             </div>
                         @empty
-                            <div class="text-sm text-slate-500 italic">No hay actividad reciente. Empieza subiendo un dataset.</div>
+                            <div class="text-sm text-slate-500 italic">No hay actividad reciente.</div>
                         @endforelse
-
                     </div>
 
-                    <div class="mt-8 rounded-2xl bg-white p-4 border border-slate-100 shadow-sm">
-                        <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Servicios operativos</div>
-                        <div class="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-600">
-                            <span class="flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> BD Activa
-                            </span>
-                            <span class="flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Weka Engine
-                            </span>
+                    <div class="rounded-2xl border border-slate-100 bg-slate-50/70 p-5">
+                        <div class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Acceso por módulo</div>
+                        <p class="mt-3 text-sm leading-6 text-slate-600">La creación y edición de datasets vive en <span class="font-semibold text-slate-900">Datasets</span>. Las configuraciones y entrenamientos viven en <span class="font-semibold text-slate-900">IA</span>.</p>
+                        <div class="mt-4 space-y-2 text-sm text-slate-600">
+                            <div class="rounded-xl bg-white px-4 py-3">Datasets: ver, subir y administrar.</div>
+                            <div class="rounded-xl bg-white px-4 py-3">IA: configuraciones y entrenamiento.</div>
                         </div>
                     </div>
                 </div>

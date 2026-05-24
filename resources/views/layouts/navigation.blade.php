@@ -14,8 +14,46 @@
 
                 <div class="hidden sm:flex items-center gap-2 rounded-full border border-sky-100 bg-slate-50/80 p-1 shadow-sm">
                     <a href="{{ route('dashboard') }}" class="rounded-full px-4 py-2 text-sm font-medium transition {{ request()->routeIs('dashboard') ? 'bg-white text-sky-700 shadow-sm ring-1 ring-sky-100' : 'text-slate-600 hover:text-sky-700' }}">Dashboard</a>
-                    <a href="{{ route('datasets.index') }}" class="rounded-full px-4 py-2 text-sm font-medium transition {{ request()->routeIs('datasets.index') ? 'bg-white text-sky-700 shadow-sm ring-1 ring-sky-100' : 'text-slate-600 hover:text-sky-700' }}">Datasets</a>
-                    <a href="{{ route('datasets.create') }}" class="rounded-full px-4 py-2 text-sm font-medium transition {{ request()->routeIs('datasets.create') ? 'bg-white text-sky-700 shadow-sm ring-1 ring-sky-100' : 'text-slate-600 hover:text-sky-700' }}">Subir Dataset</a>
+
+                    <x-dropdown align="left" width="52">
+                        <x-slot name="trigger">
+                            <button class="rounded-full px-4 py-2 text-sm font-medium transition {{ request()->routeIs('datasets.*') ? 'bg-white text-sky-700 shadow-sm ring-1 ring-sky-100' : 'text-slate-600 hover:text-sky-700' }}">
+                                Datasets
+                            </button>
+                        </x-slot>
+
+                        <x-slot name="content">
+                            <x-dropdown-link :href="route('datasets.index')">
+                                Ver datasets
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('datasets.create')">
+                                Subir dataset
+                            </x-dropdown-link>
+                        </x-slot>
+                    </x-dropdown>
+
+                    <x-dropdown align="left" width="56">
+                        <x-slot name="trigger">
+                            <button class="rounded-full px-4 py-2 text-sm font-medium transition {{ request()->routeIs('training-configurations.*') || request()->routeIs('training-jobs.*') ? 'bg-white text-sky-700 shadow-sm ring-1 ring-sky-100' : 'text-slate-600 hover:text-sky-700' }}">
+                                IA
+                            </button>
+                        </x-slot>
+
+                        <x-slot name="content">
+                            <x-dropdown-link :href="route('training-configurations.index')">
+                                Configuraciones
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('training-configurations.create')">
+                                Nueva configuración
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('training-jobs.index')">
+                                Entrenamientos
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('training-jobs.create')">
+                                Nuevo entrenamiento
+                            </x-dropdown-link>
+                        </x-slot>
+                    </x-dropdown>
                 </div>
             </div>
 
@@ -60,8 +98,20 @@
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden border-t border-sky-100 bg-white/95 backdrop-blur-xl">
         <div class="space-y-1 px-4 py-3">
             <a href="{{ route('dashboard') }}" class="block rounded-2xl px-4 py-3 text-sm font-medium {{ request()->routeIs('dashboard') ? 'bg-sky-50 text-sky-700' : 'text-slate-600 hover:bg-sky-50 hover:text-sky-700' }}">Dashboard</a>
-            <a href="{{ route('datasets.index') }}" class="block rounded-2xl px-4 py-3 text-sm font-medium {{ request()->routeIs('datasets.index') ? 'bg-sky-50 text-sky-700' : 'text-slate-600 hover:bg-sky-50 hover:text-sky-700' }}">Datasets</a>
-            <a href="{{ route('datasets.create') }}" class="block rounded-2xl px-4 py-3 text-sm font-medium {{ request()->routeIs('datasets.create') ? 'bg-sky-50 text-sky-700' : 'text-slate-600 hover:bg-sky-50 hover:text-sky-700' }}">Subir Dataset</a>
+
+            <div class="rounded-2xl border border-sky-100 bg-slate-50/80 p-2">
+                <div class="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-500">Datasets</div>
+                <a href="{{ route('datasets.index') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('datasets.index') ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-600 hover:bg-white hover:text-sky-700' }}">Ver datasets</a>
+                <a href="{{ route('datasets.create') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('datasets.create') ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-600 hover:bg-white hover:text-sky-700' }}">Subir dataset</a>
+            </div>
+
+            <div class="rounded-2xl border border-sky-100 bg-slate-50/80 p-2">
+                <div class="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-500">IA</div>
+                <a href="{{ route('training-configurations.index') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('training-configurations.index') ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-600 hover:bg-white hover:text-sky-700' }}">Configuraciones</a>
+                <a href="{{ route('training-configurations.create') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('training-configurations.create') ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-600 hover:bg-white hover:text-sky-700' }}">Nueva configuración</a>
+                <a href="{{ route('training-jobs.index') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('training-jobs.index') ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-600 hover:bg-white hover:text-sky-700' }}">Entrenamientos</a>
+                <a href="{{ route('training-jobs.create') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('training-jobs.create') ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-600 hover:bg-white hover:text-sky-700' }}">Nuevo entrenamiento</a>
+            </div>
         </div>
 
         <div class="border-t border-sky-100 px-4 py-4">

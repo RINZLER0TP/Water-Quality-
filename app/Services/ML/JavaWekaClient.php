@@ -17,11 +17,14 @@ class JavaWekaClient
      * Ejecuta un jar de Weka con parámetros y devuelve la salida.
      * Implementación mínima; adaptar según la integración Java que uses.
      */
-    public function runJar(string $jarPath, array $args = []): string
+    public function runJar(string $jarPath, array $args = [], ?int $timeoutSeconds = null): string
     {
         $cmd = array_merge([$this->javaPath, '-jar', $jarPath], $args);
 
         $process = new Process($cmd);
+        if ($timeoutSeconds !== null) {
+            $process->setTimeout($timeoutSeconds);
+        }
         $process->run();
 
         if (! $process->isSuccessful()) {

@@ -6,6 +6,7 @@ use App\DTOs\DatasetDTO;
 use App\Models\Dataset;
 use App\Repositories\Contracts\DatasetRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -40,6 +41,8 @@ class DatasetService
 
     public function delete(Dataset $dataset): bool
     {
+        $this->deleteTrainingArtifacts($dataset);
+
         if (Storage::disk('local')->exists($dataset->file_path)) {
             Storage::disk('local')->delete($dataset->file_path);
         }
@@ -169,5 +172,27 @@ class DatasetService
         }
 
         return true;
+    }
+
+    private function deleteTrainingArtifacts(Dataset $dataset): void
+    {
+        $dataset->loadMissing('trainingConfigurations.trainingJobs');
+
+        /** @var Collection<int, \App\Models\TrainingConfiguration> $configurations */
+        $configurations = $dataset->trainingConfigurations;
+
+        foreach ($configurations as $configuration) {
+            foreach ($configuration->trainingJobs as $job) {
+                if (! empty($job->model_path) && Storage::disk('local')->exists($job->model_path)) {
+                    Storage::disk('local')->delete($job->model_path);
+                }
+
+                if (! empty($job->log_path) && Storage::disk('local')->exists($job->log_path)) {
+                    Storage::disk('local')->delete($job->log_path);
+                }
+            }
+
+            $configuration->forceDelete();
+        }
     }
 }
