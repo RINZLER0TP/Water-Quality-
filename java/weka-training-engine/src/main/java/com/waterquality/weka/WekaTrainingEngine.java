@@ -156,9 +156,20 @@ public class WekaTrainingEngine {
         Classifier classifier = (Classifier) SerializationHelper.read(modelPath);
 
         // Cargar los datos de prueba
-        CSVLoader loader = new CSVLoader();
-        loader.setSource(new File(csvPath));
-        Instances data = loader.getDataSet();
+        Instances data;
+        if ("stdin".equalsIgnoreCase(csvPath) || "-".equals(csvPath)) {
+            String csvContent = new String(System.in.readAllBytes(), StandardCharsets.UTF_8);
+
+            if (csvContent.isBlank()) {
+                throw new IllegalStateException("CSV vacío recibido por stdin; el proceso Java no recibió datos de entrada.");
+            }
+
+            data = loadCsvFromText(csvContent);
+        } else {
+            CSVLoader loader = new CSVLoader();
+            loader.setSource(new File(csvPath));
+            data = loader.getDataSet();
+        }
 
         if (data.numInstances() == 0) {
             throw new IllegalStateException("El CSV no contiene instancias para predecir.");

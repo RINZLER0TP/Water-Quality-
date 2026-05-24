@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Predictions\RunPredictionAction;
+use App\Enums\TrainingJobStatus;
 use App\Http\Requests\StorePredictionRequest;
 use App\Models\Prediction;
 use App\Models\TrainingJob;
@@ -25,7 +26,8 @@ class PredictionController extends Controller
     public function create()
     {
         // Get active completed training jobs
-        $activeModels = TrainingJob::where('status', 'COMPLETED')
+        $activeModels = TrainingJob::query()
+            ->where('status', TrainingJobStatus::COMPLETED->value)
             ->whereNotNull('model_path')
             ->latest()
             ->get();

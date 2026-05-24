@@ -260,7 +260,7 @@ class TrainingJobService
     private function javaOptionsForAlgorithm(string $algorithm): array
     {
         return match ($algorithm) {
-            'logistic' => ['-Xms64m', '-Xmx768m'],
+            'logistic' => ['-Xms16m', '-Xmx640m', '-XX:+UseSerialGC'],
             default => [],
         };
     }

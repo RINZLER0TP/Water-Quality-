@@ -4,6 +4,7 @@ namespace App\Services\ML;
 
 use App\Models\TrainingJob;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class PredictionService
@@ -18,27 +19,27 @@ class PredictionService
     public function predict(TrainingJob $job, array $inputData): array
     {
         // 1. Validar que el job tenga un model_path
-        if (empty($job->model_path) || !File::exists($job->model_path)) {
+        if (empty($job->model_path) || !File::exists(Storage::disk('local')->path($job->model_path))) {
             throw new \RuntimeException("El modelo Weka no se encontró en el servidor: {$job->model_path}");
         }
 
-        // 2. Crear un archivo CSV temporal con los datos de entrada y la misma estructura que el dataset original
-        // Weka requiere que las columnas sean idénticas. Añadimos la columna objetivo al final con valor '?'.
-        $tempCsvPath = storage_path('app/weka/temp/predict_' . Str::uuid() . '.csv');
-        $this->createTempCsv($tempCsvPath, $inputData, $job->target_column);
+        $modelPath = Storage::disk('local')->path($job->model_path);
+        $runtimeModelPath = $this->copyToRuntimeTemp($modelPath, 'weka_model_' . $job->id . '_' . Str::uuid() . '.model');
+        // 2. Crear el CSV en memoria para enviarlo por stdin y evitar bloqueos de archivo en Windows.
+        $csvContent = $this->buildCsvContent($inputData, $job->target_column);
 
         try {
             // 3. Ejecutar el JavaWekaClient en modo predict
-            $jarPath = config('weka.jar_path');
+            $jarPath = (string) config('weka.jar_path');
             
             $args = [
                 '--mode=predict',
-                '--model=' . $job->model_path,
-                '--csv=' . $tempCsvPath,
+                '--model=' . $runtimeModelPath,
+                '--csv=stdin',
                 '--target=' . $job->target_column
             ];
 
-            $output = $this->client->runJar($jarPath, $args, 30); // 30s timeout
+            $output = $this->client->runJar($jarPath, $args, 30, $csvContent); // 30s timeout
             
             $result = json_decode($output, true);
             
@@ -50,21 +51,14 @@ class PredictionService
             return $result['prediction'];
 
         } finally {
-            // Limpiar CSV temporal
-            if (File::exists($tempCsvPath)) {
-                File::delete($tempCsvPath);
+            if (File::exists($runtimeModelPath)) {
+                File::delete($runtimeModelPath);
             }
         }
     }
 
-    private function createTempCsv(string $path, array $inputData, string $targetColumn): void
+    private function buildCsvContent(array $inputData, string $targetColumn): string
     {
-        // Asegurar que el directorio exista
-        $dir = dirname($path);
-        if (!File::exists($dir)) {
-            File::makeDirectory($dir, 0755, true);
-        }
-
         // Preparar cabeceras y valores
         // El orden de las llaves en inputData importa. Asumiremos que el frontend envía los campos en orden correcto.
         // O idealmente, sacaríamos las cabeceras del Dataset original, pero para simplificar enviamos inputData + target.
@@ -74,9 +68,44 @@ class PredictionService
         $values = array_values($inputData);
         $values[] = '?'; // Weka usa '?' para missing/target en predicción
 
-        $handle = fopen($path, 'w');
+        $handle = fopen('php://temp', 'r+');
+        if ($handle === false) {
+            throw new \RuntimeException('No se pudo crear el CSV temporal en memoria para la predicción.');
+        }
+
         fputcsv($handle, $headers);
         fputcsv($handle, $values);
+        rewind($handle);
+
+        $csvContent = stream_get_contents($handle);
         fclose($handle);
+
+        if (! is_string($csvContent) || $csvContent === '') {
+            throw new \RuntimeException('No se pudo generar el contenido CSV de la predicción.');
+        }
+
+        return $csvContent;
+    }
+
+    private function runtimeTempPath(string $fileName): string
+    {
+        $directory = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'water-quality-weka';
+
+        if (! File::exists($directory)) {
+            File::makeDirectory($directory, 0755, true);
+        }
+
+        return $directory . DIRECTORY_SEPARATOR . $fileName;
+    }
+
+    private function copyToRuntimeTemp(string $sourcePath, string $fileName): string
+    {
+        $destinationPath = $this->runtimeTempPath($fileName);
+
+        if (!@copy($sourcePath, $destinationPath)) {
+            throw new \RuntimeException("No se pudo preparar el modelo temporal para la predicción: {$sourcePath}");
+        }
+
+        return $destinationPath;
     }
 }
