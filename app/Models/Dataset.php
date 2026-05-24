@@ -45,4 +45,22 @@ class Dataset extends Model
     {
         return $this->hasMany(TrainingConfiguration::class);
     }
+
+    public function trainingJobs(): HasMany
+    {
+        return $this->hasMany(TrainingJob::class);
+    }
+
+    protected static function booted()
+    {
+        static::deleting(function (Dataset $dataset) {
+            $dataset->trainingConfigurations()->delete();
+            $dataset->trainingJobs()->delete();
+        });
+
+        static::restoring(function (Dataset $dataset) {
+            $dataset->trainingConfigurations()->restore();
+            $dataset->trainingJobs()->restore();
+        });
+    }
 }
