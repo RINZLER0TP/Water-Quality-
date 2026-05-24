@@ -7,6 +7,7 @@ use App\Enums\TrainingJobStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TrainingJob extends Model
@@ -35,16 +36,16 @@ class TrainingJob extends Model
     ];
 
     protected $casts = [
-        'algorithm' => TrainingAlgorithm::class,
-        'status' => TrainingJobStatus::class,
-        'parameters' => 'array',
-        'metrics' => 'array',
-        'confusion_matrix' => 'array',
+        'algorithm'              => TrainingAlgorithm::class,
+        'status'                 => TrainingJobStatus::class,
+        'parameters'             => 'array',
+        'metrics'                => 'array',
+        'confusion_matrix'       => 'array',
         'cross_validation_folds' => 'integer',
-        'random_seed' => 'integer',
-        'started_at' => 'datetime',
-        'completed_at' => 'datetime',
-        'training_time_ms' => 'integer',
+        'random_seed'            => 'integer',
+        'started_at'             => 'datetime',
+        'completed_at'           => 'datetime',
+        'training_time_ms'       => 'integer',
     ];
 
     public function trainingConfiguration(): BelongsTo
@@ -60,5 +61,23 @@ class TrainingJob extends Model
     public function dataset(): BelongsTo
     {
         return $this->belongsTo(Dataset::class);
+    }
+
+    public function predictions(): HasMany
+    {
+        return $this->hasMany(Prediction::class);
+    }
+
+    protected static function booted(): void
+    {
+        // Cuando se elimina un job, eliminar sus predicciones
+        static::deleting(function (TrainingJob $job): void {
+            $job->predictions()->delete();
+        });
+
+        // Al restaurar un job, restaurar sus predicciones
+        static::restoring(function (TrainingJob $job): void {
+            $job->predictions()->withTrashed()->restore();
+        });
     }
 }

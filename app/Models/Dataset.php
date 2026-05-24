@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\TrainingConfiguration;
 
 class Dataset extends Model
 {
@@ -28,12 +28,12 @@ class Dataset extends Model
     ];
 
     protected $casts = [
-        'file_size' => 'integer',
-        'rows_count' => 'integer',
-        'columns_count' => 'integer',
-        'status' => DatasetStatus::class,
-        'metadata' => 'array',
-        'metrics' => 'array',
+        'file_size'      => 'integer',
+        'rows_count'     => 'integer',
+        'columns_count'  => 'integer',
+        'status'         => DatasetStatus::class,
+        'metadata'       => 'array',
+        'metrics'        => 'array',
     ];
 
     public function uploader(): BelongsTo
@@ -51,16 +51,33 @@ class Dataset extends Model
         return $this->hasMany(TrainingJob::class);
     }
 
-    protected static function booted()
+    public function predictions(): HasManyThrough
     {
-        static::deleting(function (Dataset $dataset) {
-            $dataset->trainingConfigurations()->delete();
+        return $this->hasManyThrough(Prediction::class, TrainingJob::class);
+    }
+
+    protected static function booted(): void
+    {
+        // Soft-delete en cascada: Dataset → Configuraciones → Jobs → Predicciones
+        static::deleting(function (Dataset $dataset): void {
+            // Primero cascadeamos las predicciones de cada job
+            $dataset->trainingJobs()->each(
+                fn (TrainingJob $job) => $job->predictions()->delete()
+            );
             $dataset->trainingJobs()->delete();
+            $dataset->trainingConfigurations()->each(
+                fn (TrainingConfiguration $config) => $config->trainingJobs()->delete()
+            );
+            $dataset->trainingConfigurations()->delete();
         });
 
-        static::restoring(function (Dataset $dataset) {
-            $dataset->trainingConfigurations()->restore();
-            $dataset->trainingJobs()->restore();
+        // Restore en cascada inverso: Dataset → Configuraciones → Jobs → Predicciones
+        static::restoring(function (Dataset $dataset): void {
+            $dataset->trainingConfigurations()->withTrashed()->restore();
+            $dataset->trainingJobs()->withTrashed()->each(
+                fn (TrainingJob $job) => $job->predictions()->withTrashed()->restore()
+            );
+            $dataset->trainingJobs()->withTrashed()->restore();
         });
     }
 }

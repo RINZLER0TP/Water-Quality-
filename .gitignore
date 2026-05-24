@@ -26,3 +26,23 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Maven y compilación Java
+/java/weka-training-engine/apache-maven-*/
+/java/weka-training-engine/maven.zip
+/java/weka-training-engine/target/maven-archiver/
+/java/weka-training-engine/target/maven-status/
+/java/weka-training-engine/target/classes/
+/java/weka-training-engine/target/original-*.jar
+/java/weka-training-engine/target/*.jar
+
+# Artefactos locales de prueba y depuración
+/*.csv
+/TestAccesoDenegado.java
+/TestAccesoDenegado.class
+/check_23.php
+/check_csv.php
+/diagnose_job.php
+/test_copy.php
+/test_process.php
+/test_process2.php

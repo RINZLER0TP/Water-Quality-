@@ -11,6 +11,7 @@ use App\Policies\DatasetPolicy;
 use App\Policies\TrainingJobPolicy;
 use App\Policies\TrainingConfigurationPolicy;
 use App\Policies\WaterSamplePolicy;
+use App\Policies\PredictionPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,7 @@ class AuthServiceProvider extends ServiceProvider
         TrainingConfiguration::class => TrainingConfigurationPolicy::class,
         TrainingJob::class => TrainingJobPolicy::class,
         WaterSample::class => WaterSamplePolicy::class,
+        Prediction::class => PredictionPolicy::class,
     ];
 
     public function register(): void

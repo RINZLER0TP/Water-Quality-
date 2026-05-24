@@ -2,6 +2,10 @@
 
 return [
     'java_path' => env('WEKA_JAVA_PATH', 'java'),
+    'java_options' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('WEKA_JAVA_OPTIONS', '-Xms128m,-Xmx512m'))
+    ))),
     'jar_path' => env('WEKA_JAR_PATH', base_path('java/weka-training-engine/target/weka-training-engine.jar')),
     'models_path' => env('WEKA_MODELS_PATH', 'weka/models'),
     'logs_path' => env('WEKA_LOGS_PATH', 'weka/logs'),

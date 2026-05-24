@@ -42,4 +42,23 @@ class TrainingConfiguration extends Model
     {
         return $this->hasMany(TrainingJob::class);
     }
+
+    protected static function booted(): void
+    {
+        // Cuando se elimina una configuración, eliminar sus jobs y las predicciones de esos jobs
+        static::deleting(function (TrainingConfiguration $config): void {
+            $config->trainingJobs()->each(
+                fn (TrainingJob $job) => $job->predictions()->delete()
+            );
+            $config->trainingJobs()->delete();
+        });
+
+        // Al restaurar, restaurar jobs y sus predicciones
+        static::restoring(function (TrainingConfiguration $config): void {
+            $config->trainingJobs()->withTrashed()->each(
+                fn (TrainingJob $job) => $job->predictions()->withTrashed()->restore()
+            );
+            $config->trainingJobs()->withTrashed()->restore();
+        });
+    }
 }

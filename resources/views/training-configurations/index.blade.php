@@ -33,9 +33,9 @@
                     <p class="mt-2 text-xs text-slate-500">Cobertura actual del catálogo.</p>
                 </div>
                 <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_10px_40px_rgba(15,23,42,0.06)]">
-                    <p class="text-sm text-slate-500">Modelos base</p>
+                    <p class="text-sm text-slate-500">Uso de modelos base</p>
                     <p class="mt-2 text-3xl font-semibold text-slate-950">{{ number_format($statistics['zeror'] + $statistics['oner'] + $statistics['naive_bayes'] + $statistics['logistic']) }}</p>
-                    <p class="mt-2 text-xs text-slate-500">ZeroR, OneR, NaiveBayes y Logistic.</p>
+                    <p class="mt-2 text-xs text-slate-500">Configuraciones con ZeroR, OneR, NaiveBayes o Logistic.</p>
                 </div>
                 <div class="rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_10px_40px_rgba(15,23,42,0.06)]">
                     <p class="text-sm text-slate-500">Última creación</p>

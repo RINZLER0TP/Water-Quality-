@@ -15,6 +15,11 @@
 
     <div class="py-10">
         <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            @php
+                $parameterSchema = collect($trainingConfiguration->algorithm?->parameterSchema() ?? [])->keyBy('name');
+                $parameterCount = count($trainingConfiguration->parameters ?? []);
+            @endphp
+
             @if (session('status'))
                 <div class="rounded-2xl border border-emerald-200 bg-emerald-50/90 px-4 py-4 text-sm text-emerald-800 shadow-sm">
                     {{ session('status') }}
@@ -49,7 +54,7 @@
                     <div class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_20px_80px_rgba(15,23,42,0.08)]">
                         <div class="mx-auto max-w-2xl text-center">
                             <div class="flex justify-center">
-                                <x-water-chip value="{{ count($trainingConfiguration->parameters ?? []) }}" label="campos" />
+                                <x-water-chip value="{{ $parameterCount }}" label="{{ $parameterCount === 1 ? 'campo' : 'campos' }}" />
                             </div>
                             <h3 class="mt-4 text-lg font-semibold text-slate-950">Parámetros básicos</h3>
                             <p class="mt-1 text-sm text-slate-500">Resumen centrado de la configuración usada para el entrenamiento.</p>
@@ -57,9 +62,17 @@
 
                         <div class="mt-6 grid gap-4 sm:grid-cols-2 justify-items-stretch">
                             @forelse (($trainingConfiguration->parameters ?? []) as $key => $value)
+                                @php
+                                    $schema = $parameterSchema->get($key, []);
+                                    $label = $schema['label'] ?? str($key)->replace('_', ' ')->title();
+                                    $isBoolean = ($schema['type'] ?? null) === 'boolean';
+                                    $formattedValue = $isBoolean
+                                        ? (($value === true || $value === 1 || $value === '1' || $value === 'true') ? 'Sí' : 'No')
+                                        : (is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : (string) $value);
+                                @endphp
                                 <div class="rounded-2xl bg-slate-50 p-4 text-center">
-                                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">{{ $key }}</p>
-                                    <p class="mt-2 text-sm font-medium text-slate-950">{{ is_bool($value) ? ($value ? 'true' : 'false') : (is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : (string) $value) }}</p>
+                                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">{{ $label }}</p>
+                                    <p class="mt-2 text-sm font-medium text-slate-950">{{ $formattedValue }}</p>
                                 </div>
                             @empty
                                 <div class="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 text-center">Este algoritmo no requiere parámetros adicionales.</div>
@@ -76,26 +89,26 @@
                             <p class="mt-1 text-sm text-slate-500">Snapshot analítico guardado para poder repetir y auditar el entrenamiento.</p>
                         </div>
 
-                        <div class="mt-6 grid gap-4 md:grid-cols-3 xl:grid-cols-5 justify-items-stretch">
-                            <div class="rounded-2xl bg-slate-50 p-4 text-center">
-                                <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Filas</p>
-                                <p class="mt-2 text-2xl font-semibold text-slate-950">{{ $trainingConfiguration->analysis['statistics']['rows_count'] ?? 0 }}</p>
+                        <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                            <div class="rounded-2xl bg-slate-50 p-3 flex flex-col justify-center items-center text-center">
+                                <p class="text-[10px] uppercase tracking-wider text-slate-400">Filas</p>
+                                <p class="mt-1 text-xl sm:text-2xl font-semibold text-slate-950">{{ $trainingConfiguration->analysis['statistics']['rows_count'] ?? 0 }}</p>
                             </div>
-                            <div class="rounded-2xl bg-slate-50 p-4 text-center">
-                                <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Columnas</p>
-                                <p class="mt-2 text-2xl font-semibold text-slate-950">{{ $trainingConfiguration->analysis['statistics']['columns_count'] ?? 0 }}</p>
+                            <div class="rounded-2xl bg-slate-50 p-3 flex flex-col justify-center items-center text-center">
+                                <p class="text-[10px] uppercase tracking-wider text-slate-400">Columnas</p>
+                                <p class="mt-1 text-xl sm:text-2xl font-semibold text-slate-950">{{ $trainingConfiguration->analysis['statistics']['columns_count'] ?? 0 }}</p>
                             </div>
-                            <div class="rounded-2xl bg-slate-50 p-4 text-center">
-                                <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Missing</p>
-                                <p class="mt-2 text-2xl font-semibold text-slate-950">{{ $trainingConfiguration->analysis['statistics']['missing_values'] ?? 0 }}</p>
+                            <div class="rounded-2xl bg-slate-50 p-3 flex flex-col justify-center items-center text-center">
+                                <p class="text-[10px] uppercase tracking-wider text-slate-400">Missing</p>
+                                <p class="mt-1 text-xl sm:text-2xl font-semibold text-slate-950">{{ $trainingConfiguration->analysis['statistics']['missing_values'] ?? 0 }}</p>
                             </div>
-                            <div class="rounded-2xl bg-slate-50 p-4 text-center">
-                                <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Numéricas</p>
-                                <p class="mt-2 text-2xl font-semibold text-slate-950">{{ $trainingConfiguration->analysis['statistics']['numeric_columns'] ?? 0 }}</p>
+                            <div class="rounded-2xl bg-slate-50 p-3 flex flex-col justify-center items-center text-center">
+                                <p class="text-[10px] uppercase tracking-wider text-slate-400">Numéricas</p>
+                                <p class="mt-1 text-xl sm:text-2xl font-semibold text-slate-950">{{ $trainingConfiguration->analysis['statistics']['numeric_columns'] ?? 0 }}</p>
                             </div>
-                            <div class="rounded-2xl bg-slate-50 p-4 text-center">
-                                <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Completitud</p>
-                                <p class="mt-2 text-2xl font-semibold text-slate-950">{{ $trainingConfiguration->analysis['statistics']['completeness_percentage'] ?? 0 }}%</p>
+                            <div class="rounded-2xl bg-slate-50 p-3 flex flex-col justify-center items-center text-center sm:col-span-3 lg:col-span-1">
+                                <p class="text-[10px] uppercase tracking-wider text-slate-400">Completo</p>
+                                <p class="mt-1 text-xl sm:text-2xl font-semibold text-slate-950">{{ $trainingConfiguration->analysis['statistics']['completeness_percentage'] ?? 0 }}%</p>
                             </div>
                         </div>
 

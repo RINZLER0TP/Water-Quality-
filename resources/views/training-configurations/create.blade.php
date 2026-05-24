@@ -188,7 +188,10 @@
                                     <h4 class="text-lg font-semibold text-slate-950">Preview del dataset</h4>
                                     <p class="mt-1 text-sm text-slate-500">La tabla ocupa todo el ancho disponible y usa scroll interno cuando hay muchas columnas.</p>
                                 </div>
-                                <x-water-chip :value="$preview['statistics']['rows_count'] ?? '0'" label="filas" />
+                                <div class="chip">
+                                    <div class="chip-v" x-text="preview?.statistics?.rows_count ?? 0">0</div>
+                                    <div class="chip-l">filas</div>
+                                </div>
                             </div>
 
                             <div x-show="loading" class="mt-5 space-y-3">
@@ -250,7 +253,10 @@
                                             <h4 class="text-sm font-semibold text-slate-950">Columnas detectadas</h4>
                                             <p class="mt-1 text-xs text-slate-500">Tabla compacta, tipo catálogo.</p>
                                         </div>
-                                        <x-water-chip :value="count($preview['columns'] ?? [])" label="columnas" />
+                                        <div class="chip">
+                                            <div class="chip-v" x-text="preview?.statistics?.columns_count ?? 0">0</div>
+                                            <div class="chip-l">columnas</div>
+                                        </div>
                                     </div>
 
                                     <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50">
@@ -287,7 +293,10 @@
                                             <h4 class="text-sm font-semibold text-slate-950">Primeras filas</h4>
                                             <p class="mt-1 text-xs text-slate-500">Tabla horizontal con header fijo y scroll interno.</p>
                                         </div>
-                                        <x-water-chip :value="$preview['preview_rows_count'] ?? 0" label="filas visibles" />
+                                        <div class="chip">
+                                            <div class="chip-v" x-text="preview?.preview_rows_count ?? 0">0</div>
+                                            <div class="chip-l">filas visibles</div>
+                                        </div>
                                     </div>
 
                                     <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50">

@@ -36,11 +36,19 @@ class TrainingJobController extends Controller
     {
         $this->authorize('create', TrainingJob::class);
 
-        $configurations = TrainingConfiguration::query()
+        $user = $request->user();
+        $canViewAllConfigurations = $user !== null && method_exists($user, 'hasRole') && $user->hasRole('admin');
+
+        $configurationsQuery = TrainingConfiguration::query()
             ->withoutTrashed()
             ->with(['dataset.uploader', 'creator'])
-            ->orderByDesc('created_at')
-            ->get();
+            ->orderByDesc('created_at');
+
+        if (! $canViewAllConfigurations && $user !== null) {
+            $configurationsQuery->where('created_by', $user->id);
+        }
+
+        $configurations = $configurationsQuery->get();
 
         $selectedConfiguration = null;
 

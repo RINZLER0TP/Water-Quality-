@@ -17,6 +17,47 @@
                 </div>
             </div>
 
+            {{-- Acciones Rápidas (Command Center) --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <a href="{{ route('datasets.create') }}" class="group relative overflow-hidden rounded-[24px] bg-white p-6 shadow-sm ring-1 ring-slate-200 hover:ring-sky-300 hover:shadow-md transition-all">
+                    <div class="absolute inset-0 bg-gradient-to-br from-sky-50 to-white opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative z-10 flex items-center gap-4">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-600 group-hover:scale-110 transition-transform">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900">Subir Dataset</h3>
+                            <p class="text-xs text-slate-500">Cargar nuevo archivo CSV</p>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{{ route('training-jobs.create') }}" class="group relative overflow-hidden rounded-[24px] bg-white p-6 shadow-sm ring-1 ring-slate-200 hover:ring-indigo-300 hover:shadow-md transition-all">
+                    <div class="absolute inset-0 bg-gradient-to-br from-indigo-50 to-white opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative z-10 flex items-center gap-4">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600 group-hover:scale-110 transition-transform">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900">Entrenar Modelo</h3>
+                            <p class="text-xs text-slate-500">Crear IA con Weka</p>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{{ route('predictions.create') }}" class="group relative overflow-hidden rounded-[24px] bg-gradient-to-r from-sky-500 to-cyan-400 p-6 shadow-lg shadow-sky-200 hover:shadow-sky-300 hover:-translate-y-1 transition-all">
+                    <div class="relative z-10 flex items-center gap-4">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 text-white backdrop-blur-sm group-hover:scale-110 transition-transform">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white">Nueva Predicción</h3>
+                            <p class="text-xs text-sky-100">Analizar calidad de agua</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
             {{-- Métricas Principales --}}
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <div class="water-panel rounded-[24px] p-6 transition-transform hover:-translate-y-1">

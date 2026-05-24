@@ -45,7 +45,8 @@
             @endif
 
             <section class="rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_20px_80px_rgba(15,23,42,0.08)]">
-                <form method="GET" action="{{ route('training-jobs.create') }}" class="space-y-6">
+                <form method="POST" action="{{ route('training-jobs.store') }}" class="space-y-6">
+                    @csrf
                     <div>
                         <label for="training_configuration_id" class="block text-sm font-medium text-slate-700">Configuración de entrenamiento</label>
                         <select id="training_configuration_id" name="training_configuration_id" class="mt-2 w-full rounded-2xl border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100">
@@ -56,6 +57,12 @@
                                 </option>
                             @endforeach
                         </select>
+                        @error('training_configuration_id')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        @if ($configurations->isEmpty())
+                            <p class="mt-2 text-sm text-amber-600">No tienes configuraciones disponibles para entrenar.</p>
+                        @endif
                     </div>
 
                     <div class="rounded-[28px] border border-dashed border-slate-200 bg-slate-50/70 p-5">

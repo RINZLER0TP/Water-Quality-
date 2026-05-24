@@ -14,9 +14,9 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="antialiased text-slate-900 water-app-bg">
+    <body class="antialiased text-slate-900 water-app-bg overflow-x-hidden">
         <canvas id="particles" style="position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.6;"></canvas>
-        <div class="min-h-screen water-app-bg">
+        <div class="min-h-screen water-app-bg overflow-x-hidden relative">
             @include('layouts.navigation')
 
             <!-- Page Heading -->
@@ -29,7 +29,7 @@
             @endisset
 
             <!-- Page Content -->
-            <main>
+            <main class="overflow-x-hidden">
                 {{ $slot }}
             </main>
         </div>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\DeleteDatasetAction;
 use App\Actions\StoreDatasetAction;
 use App\Http\Requests\IndexDatasetRequest;
 use App\Http\Requests\StoreDatasetRequest;
@@ -9,6 +10,7 @@ use App\Models\Dataset;
 use App\Services\Datasets\DatasetService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -71,11 +73,17 @@ class DatasetController extends Controller
         return $this->service->download($dataset);
     }
 
-    public function destroy(Dataset $dataset): RedirectResponse
+    public function destroy(Request $request, Dataset $dataset, DeleteDatasetAction $action): RedirectResponse
     {
         $this->authorize('delete', $dataset);
 
-        $this->service->delete($dataset);
+        $user = $request->user();
+
+        if ($user === null) {
+            abort(403);
+        }
+
+        $action($user, $dataset);
 
         return redirect()->route('datasets.index')->with('status', 'Dataset eliminado correctamente.');
     }

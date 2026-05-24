@@ -10,6 +10,19 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+Route::get('/debug', function () {
+    $job = \App\Models\TrainingJob::find(23);
+    $service = app(\App\Services\TrainingJobs\TrainingJobService::class);
+    
+    // Simulate exactly what happens
+    try {
+        $job = $service->execute($job);
+        return response()->json($job->toArray());
+    } catch (\Throwable $e) {
+        return "FAILED: " . $e->getMessage();
+    }
+});
+
 Route::get('/dashboard', function () {
     try {
         $datasetsCount = \Illuminate\Support\Facades\Schema::hasTable('datasets') ? \App\Models\Dataset::count() : 0;
@@ -53,6 +66,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('training-configurations')->name('training-configurations.')->group(function () {
         Route::get('/', [TrainingConfigurationController::class, 'index'])->name('index');
+
         Route::get('/create', [TrainingConfigurationController::class, 'create'])->name('create');
         Route::post('/', [TrainingConfigurationController::class, 'store'])->name('store');
         Route::get('/datasets/{dataset}/preview', [TrainingConfigurationController::class, 'preview'])->name('preview');
@@ -68,6 +82,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/{trainingJob}/metrics', [TrainingJobController::class, 'metrics'])->name('metrics');
         Route::delete('/{trainingJob}', [TrainingJobController::class, 'destroy'])->name('destroy');
     });
+
+    // Route::resource('water-samples', \App\Http\Controllers\WaterSampleController::class);
+    
+    // Predicciones Weka
+    Route::resource('predictions', \App\Http\Controllers\PredictionController::class)->only(['index', 'create', 'store', 'show']);
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

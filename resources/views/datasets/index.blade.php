@@ -136,9 +136,75 @@
                                             <div class="flex justify-end gap-2">
                                                 <x-water-button href="{{ route('datasets.show', $dataset) }}" class="border border-slate-200 bg-white text-slate-700">Ver</x-water-button>
                                                 <x-water-button href="{{ route('datasets.download', $dataset) }}" class="bg-cyan-500 text-white shadow-lg shadow-cyan-500/20">Descargar</x-water-button>
+                                                <x-water-button
+                                                    type="button"
+                                                    x-data=""
+                                                    x-on:click.prevent="$dispatch('open-modal', 'confirm-dataset-deletion-{{ $dataset->id }}')"
+                                                    class="bg-rose-600 text-white shadow-lg shadow-rose-900/10"
+                                                >
+                                                    Eliminar
+                                                </x-water-button>
                                             </div>
                                         </td>
                                     </tr>
+
+                                    <x-modal name="confirm-dataset-deletion-{{ $dataset->id }}" maxWidth="md">
+                                        <form method="POST" action="{{ route('datasets.destroy', $dataset) }}" class="overflow-hidden rounded-[28px] bg-white shadow-[0_30px_100px_rgba(15,23,42,0.18)] ring-1 ring-slate-200">
+                                            @csrf
+                                            @method('DELETE')
+
+                                            <div class="border-b border-slate-200 bg-gradient-to-br from-rose-50 via-white to-slate-50 px-6 py-6 sm:px-8">
+                                                <div class="flex items-start gap-4">
+                                                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600 ring-1 ring-rose-200">
+                                                        <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                                                            <path d="M12 9v4" />
+                                                            <path d="M12 17h.01" />
+                                                        </svg>
+                                                    </div>
+                                                    <div class="space-y-2">
+                                                        <p class="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-rose-500">Confirmación crítica</p>
+                                                        <h2 class="max-w-xl text-2xl font-semibold tracking-tight text-slate-950">¿Seguro que quieres eliminar este dataset?</h2>
+                                                        <p class="max-w-2xl text-sm leading-6 text-slate-600">
+                                                            Esta acción borrará el archivo almacenado y el registro del catálogo. Si continúas, perderás el acceso al dataset para descarga y futuras comparaciones.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="space-y-5 px-6 py-6 sm:px-8 sm:py-7">
+                                                <div class="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-600 ring-1 ring-slate-200">
+                                                    <div class="grid gap-2 sm:grid-cols-3 sm:gap-4">
+                                                        <div>
+                                                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Dataset</p>
+                                                            <p class="mt-1 truncate font-medium text-slate-950">{{ $dataset->name }}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Filas</p>
+                                                            <p class="mt-1 font-medium text-slate-950">{{ number_format($dataset->rows_count) }}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Archivo</p>
+                                                            <p class="mt-1 truncate font-medium text-slate-950">{{ $dataset->original_name }}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                                                    Revisa bien antes de continuar. Esta acción no se puede deshacer.
+                                                </div>
+
+                                                <div class="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-2">
+                                                    <x-water-button type="button" x-on:click="$dispatch('close')" class="border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50">
+                                                        Cancelar
+                                                    </x-water-button>
+                                                    <x-water-button type="submit" class="bg-rose-600 text-white shadow-lg shadow-rose-900/20 hover:bg-rose-500">
+                                                        Sí, eliminar dataset
+                                                    </x-water-button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </x-modal>
                                 @endforeach
                             </tbody>
                         </table>
@@ -173,8 +239,72 @@
                                 <div class="mt-4 flex flex-wrap gap-2">
                                     <x-water-button href="{{ route('datasets.show', $dataset) }}" class="border border-slate-200 bg-white text-slate-700">Ver</x-water-button>
                                     <x-water-button href="{{ route('datasets.download', $dataset) }}" class="bg-cyan-500 text-white">Descargar</x-water-button>
+                                    <x-water-button
+                                        type="button"
+                                        x-data=""
+                                        x-on:click.prevent="$dispatch('open-modal', 'confirm-dataset-deletion-{{ $dataset->id }}')"
+                                        class="bg-rose-600 text-white"
+                                    >
+                                        Eliminar
+                                    </x-water-button>
                                 </div>
                             </article>
+
+                            <x-modal name="confirm-dataset-deletion-{{ $dataset->id }}" maxWidth="md">
+                                <form method="POST" action="{{ route('datasets.destroy', $dataset) }}" class="overflow-hidden rounded-[28px] bg-white shadow-[0_30px_100px_rgba(15,23,42,0.18)] ring-1 ring-slate-200">
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <div class="border-b border-slate-200 bg-gradient-to-br from-rose-50 via-white to-slate-50 px-6 py-6 sm:px-8">
+                                        <div class="flex items-start gap-4">
+                                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-600 ring-1 ring-rose-200">
+                                                <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                                                    <path d="M12 9v4" />
+                                                    <path d="M12 17h.01" />
+                                                </svg>
+                                            </div>
+                                            <div class="space-y-2">
+                                                <p class="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-rose-500">Confirmación crítica</p>
+                                                <h2 class="max-w-xl text-2xl font-semibold tracking-tight text-slate-950">¿Seguro que quieres eliminar este dataset?</h2>
+                                                <p class="max-w-2xl text-sm leading-6 text-slate-600">Esta acción borrará el archivo almacenado y el registro del catálogo. Si continúas, perderás el acceso al dataset para descarga y futuras comparaciones.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-5 px-6 py-6 sm:px-8 sm:py-7">
+                                        <div class="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-600 ring-1 ring-slate-200">
+                                            <div class="grid gap-2 sm:grid-cols-3 sm:gap-4">
+                                                <div>
+                                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Dataset</p>
+                                                    <p class="mt-1 truncate font-medium text-slate-950">{{ $dataset->name }}</p>
+                                                </div>
+                                                <div>
+                                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Filas</p>
+                                                    <p class="mt-1 font-medium text-slate-950">{{ number_format($dataset->rows_count) }}</p>
+                                                </div>
+                                                <div>
+                                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Archivo</p>
+                                                    <p class="mt-1 truncate font-medium text-slate-950">{{ $dataset->original_name }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                                            Revisa bien antes de continuar. Esta acción no se puede deshacer.
+                                        </div>
+
+                                        <div class="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-2">
+                                            <x-water-button type="button" x-on:click="$dispatch('close')" class="border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50">
+                                                Cancelar
+                                            </x-water-button>
+                                            <x-water-button type="submit" class="bg-rose-600 text-white shadow-lg shadow-rose-900/20 hover:bg-rose-500">
+                                                Sí, eliminar dataset
+                                            </x-water-button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </x-modal>
                         @endforeach
                     </div>
                 </section>
