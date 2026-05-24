@@ -78,16 +78,19 @@
                     <div class="mt-8 grid gap-4 sm:grid-cols-2">
                         <x-water-button href="{{ route('datasets.index') }}" class="w-full justify-center">Ver todos los datasets</x-water-button>
                         <x-water-button href="{{ route('datasets.create') }}" class="w-full justify-center">Cargar nuevo CSV</x-water-button>
-                        
-                        <div class="sm:col-span-2 mt-2 p-6 rounded-2xl border border-sky-100 bg-sky-50/50 flex items-center justify-between group cursor-pointer transition-colors hover:bg-sky-50">
-                            <div>
+
+                        <a href="{{ route('training-configurations.create') }}" class="sm:col-span-2 mt-2 group rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/80 to-cyan-50/70 p-6 flex items-center justify-between transition-all hover:-translate-y-0.5 hover:border-sky-200 hover:bg-sky-50 hover:shadow-[0_16px_40px_rgba(14,165,233,0.12)]">
+                            <div class="space-y-1">
+                                <div class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-600 ring-1 ring-sky-100">
+                                    Nuevo
+                                </div>
                                 <div class="font-semibold text-slate-900 group-hover:text-sky-700 transition-colors">Entrenar nuevo modelo IA</div>
-                                <div class="text-xs text-slate-500 mt-1">Requiere al menos un dataset válido con variable objetivo.</div>
+                                <div class="text-xs text-slate-500 mt-1 max-w-xl">Abre la pantalla de configuración, carga el preview real del CSV y define target, algoritmo y parámetros antes de pasar al pipeline de Weka.</div>
                             </div>
                             <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-sky-500 shadow-sm transition-transform group-hover:scale-110 group-hover:text-sky-600">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                             </div>
-                        </div>
+                        </a>
                     </div>
                 </div>
 

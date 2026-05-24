@@ -12,7 +12,7 @@ class EloquentDatasetRepository implements DatasetRepositoryInterface
 {
     public function find(int $id): ?Dataset
     {
-        return Dataset::with('uploader')->find($id);
+        return Dataset::query()->withoutTrashed()->with('uploader')->find($id);
     }
 
     public function paginate(string $search = '', int $perPage = 10): LengthAwarePaginator
@@ -61,7 +61,7 @@ class EloquentDatasetRepository implements DatasetRepositoryInterface
 
     private function baseQuery(string $search = '')
     {
-        return Dataset::query()
+        return Dataset::query()->withoutTrashed()
             ->with('uploader')
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($subQuery) use ($search): void {

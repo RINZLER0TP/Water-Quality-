@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\TrainingConfiguration;
 
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
@@ -34,5 +35,10 @@ class User extends Authenticatable
     public function datasets(): HasMany
     {
         return $this->hasMany(Dataset::class, 'uploaded_by');
+    }
+
+    public function trainingConfigurations(): HasMany
+    {
+        return $this->hasMany(TrainingConfiguration::class, 'created_by');
     }
 }

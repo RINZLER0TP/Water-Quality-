@@ -14,7 +14,7 @@ class DatasetPolicy
 
     public function view(User $user, Dataset $dataset): bool
     {
-        return true;
+        return ! $dataset->trashed();
     }
 
     public function create(User $user): bool
@@ -24,12 +24,12 @@ class DatasetPolicy
 
     public function download(User $user, Dataset $dataset): bool
     {
-        return $this->canManageDataset($user, $dataset);
+        return ! $dataset->trashed() && $this->canManageDataset($user, $dataset);
     }
 
     public function delete(User $user, Dataset $dataset): bool
     {
-        return $this->canManageDataset($user, $dataset);
+        return ! $dataset->trashed() && $this->canManageDataset($user, $dataset);
     }
 
     private function canManageDataset(User $user, Dataset $dataset): bool

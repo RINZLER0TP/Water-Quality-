@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DatasetController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TrainingConfigurationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -38,6 +39,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/{dataset}', [DatasetController::class, 'show'])->name('show');
         Route::get('/{dataset}/download', [DatasetController::class, 'download'])->name('download');
         Route::delete('/{dataset}', [DatasetController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('training-configurations')->name('training-configurations.')->group(function () {
+        Route::get('/', [TrainingConfigurationController::class, 'index'])->name('index');
+        Route::get('/create', [TrainingConfigurationController::class, 'create'])->name('create');
+        Route::post('/', [TrainingConfigurationController::class, 'store'])->name('store');
+        Route::get('/datasets/{dataset}/preview', [TrainingConfigurationController::class, 'preview'])->name('preview');
+        Route::get('/{trainingConfiguration}', [TrainingConfigurationController::class, 'show'])->name('show');
+        Route::delete('/{trainingConfiguration}', [TrainingConfigurationController::class, 'destroy'])->name('destroy');
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
