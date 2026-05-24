@@ -12,6 +12,8 @@ interface DatasetRepositoryInterface
 
     public function paginate(string $search = '', int $perPage = 10): LengthAwarePaginator;
 
+    public function summary(string $search = ''): array;
+
     public function create(DatasetDTO $dto): Dataset;
 
     public function delete(Dataset $dataset): bool;

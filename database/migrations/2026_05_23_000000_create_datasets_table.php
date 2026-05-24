@@ -19,10 +19,11 @@ return new class extends Migration
             $table->unsignedBigInteger('file_size');
             $table->unsignedInteger('rows_count');
             $table->unsignedInteger('columns_count');
-            $table->string('status')->default('ready');
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('status')->default('validated');
+            $table->foreignId('uploaded_by')->constrained('users')->cascadeOnDelete();
             $table->json('metadata')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(['name', 'status']);
         });

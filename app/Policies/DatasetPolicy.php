@@ -9,26 +9,35 @@ class DatasetPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->canManageDatasets($user);
+        return true;
     }
 
     public function view(User $user, Dataset $dataset): bool
     {
-        return $this->canManageDatasets($user) || $dataset->user_id === $user->id;
+        return true;
     }
 
     public function create(User $user): bool
     {
-        return $this->canManageDatasets($user);
+        return true;
+    }
+
+    public function download(User $user, Dataset $dataset): bool
+    {
+        return $this->canManageDataset($user, $dataset);
     }
 
     public function delete(User $user, Dataset $dataset): bool
     {
-        return $this->canManageDatasets($user) || $dataset->user_id === $user->id;
+        return $this->canManageDataset($user, $dataset);
     }
 
-    private function canManageDatasets(User $user): bool
+    private function canManageDataset(User $user, Dataset $dataset): bool
     {
-        return $user->hasAnyRole(['admin', 'scientist', 'analyst']);
+        if ($dataset->uploaded_by === $user->id) {
+            return true;
+        }
+
+        return method_exists($user, 'hasRole') && $user->hasRole('admin');
     }
 }

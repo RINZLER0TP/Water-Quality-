@@ -14,7 +14,7 @@ readonly class DatasetDTO
         public int $rowsCount,
         public int $columnsCount,
         public DatasetStatus $status,
-        public int $userId,
+        public int $uploadedBy,
         public array $metadata = []
     ) {
     }

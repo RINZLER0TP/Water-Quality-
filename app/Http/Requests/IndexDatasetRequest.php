@@ -15,7 +15,7 @@ class IndexDatasetRequest extends FormRequest
     {
         return [
             'search' => ['nullable', 'string', 'max:100'],
-            'per_page' => ['nullable', 'integer', 'min:5', 'max:50'],
+            'per_page' => ['nullable', 'integer', 'min:6', 'max:48'],
         ];
     }
 }

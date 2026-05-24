@@ -14,19 +14,28 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['email' => 'admin@water-quality.test'],
+            ['email' => 'wilmer@water.quality.com'],
             [
-                'name' => 'Admin Water Quality',
-                'password' => Hash::make('Password123!'),
+                'name' => 'Wilmer Iriarte Camargo',
+                'password' => Hash::make('123'),
                 'email_verified_at' => now(),
             ]
         );
 
         User::updateOrCreate(
-            ['email' => 'user@water-quality.test'],
+            ['email' => 'jesus@water.quality.com'],
             [
-                'name' => 'User Water Quality',
-                'password' => Hash::make('Password123!'),
+                'name' => 'Jesus Caraballo Nieto',
+                'password' => Hash::make('123'),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'isaias@water.quality.com'],
+            [
+                'name' => 'Isaias Gamarra Cardona',
+                'password' => Hash::make('123'),
                 'email_verified_at' => now(),
             ]
         );

@@ -33,6 +33,6 @@ class User extends Authenticatable
 
     public function datasets(): HasMany
     {
-        return $this->hasMany(Dataset::class);
+        return $this->hasMany(Dataset::class, 'uploaded_by');
     }
 }

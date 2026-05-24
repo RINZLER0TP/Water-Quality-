@@ -3,24 +3,29 @@
 namespace App\Services\Datasets;
 
 use App\DTOs\DatasetDTO;
-use App\Enums\DatasetStatus;
 use App\Models\Dataset;
-use App\Models\User;
 use App\Repositories\Contracts\DatasetRepositoryInterface;
-use Illuminate\Http\UploadedFile;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DatasetService
 {
+    private const DOWNLOAD_DELIMITER = ';';
+
     public function __construct(private DatasetRepositoryInterface $repository)
     {
     }
 
-    public function paginate(string $search = '', int $perPage = 10)
+    public function paginate(string $search = '', int $perPage = 10): LengthAwarePaginator
     {
         return $this->repository->paginate($search, $perPage);
+    }
+
+    public function summary(string $search = ''): array
+    {
+        return $this->repository->summary($search);
     }
 
     public function find(int $id): ?Dataset
@@ -28,34 +33,9 @@ class DatasetService
         return $this->repository->find($id);
     }
 
-    public function store(User $user, ?string $name, UploadedFile $file): Dataset
+    public function create(DatasetDTO $dto): Dataset
     {
-        $analysis = $this->analyzeCsv($file);
-
-        $storageDirectory = 'weka/datasets';
-        Storage::disk('local')->makeDirectory($storageDirectory);
-
-        $safeBaseName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
-        $uniqueName = now()->format('YmdHis').'-'.Str::uuid()->toString().'-'.$safeBaseName.'.csv';
-        $storedPath = $file->storeAs($storageDirectory, $uniqueName, 'local');
-
-        $dataset = new DatasetDTO(
-            name: $name ?: Str::headline(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)),
-            originalName: $file->getClientOriginalName(),
-            filePath: $storedPath,
-            fileSize: (int) $file->getSize(),
-            rowsCount: $analysis['rows_count'],
-            columnsCount: $analysis['columns_count'],
-            status: DatasetStatus::READY,
-            userId: $user->id,
-            metadata: [
-                'delimiter' => $analysis['delimiter'],
-                'headers' => $analysis['headers'],
-                'validated_at' => now()->toDateTimeString(),
-            ],
-        );
-
-        return $this->repository->create($dataset);
+        return $this->repository->create($dto);
     }
 
     public function delete(Dataset $dataset): bool
@@ -67,28 +47,31 @@ class DatasetService
         return $this->repository->delete($dataset);
     }
 
-    public function download(Dataset $dataset)
+    public function download(Dataset $dataset): BinaryFileResponse
     {
         if (! Storage::disk('local')->exists($dataset->file_path)) {
             throw new RuntimeException('El archivo del dataset no existe.');
         }
 
-        return Storage::disk('local')->download($dataset->file_path, $dataset->original_name);
+        $sortedFilePath = $this->buildSortedCsvFile($dataset->file_path);
+
+        return response()->download(
+            $sortedFilePath,
+            $dataset->original_name
+        )->deleteFileAfterSend(true);
     }
 
-    /**
-     * @return array{rows_count:int, columns_count:int, headers:array<int, string>, delimiter:string}
-     */
-    private function analyzeCsv(UploadedFile $file): array
+    private function buildSortedCsvFile(string $filePath): string
     {
-        $handle = fopen($file->getRealPath(), 'rb');
+        $absolutePath = Storage::disk('local')->path($filePath);
+        $sourceHandle = fopen($absolutePath, 'rb');
 
-        if ($handle === false) {
-            throw new RuntimeException('No se pudo leer el archivo CSV.');
+        if ($sourceHandle === false) {
+            throw new RuntimeException('No se pudo leer el archivo del dataset.');
         }
 
         $firstLine = '';
-        while (($line = fgets($handle)) !== false) {
+        while (($line = fgets($sourceHandle)) !== false) {
             if (trim($line) !== '') {
                 $firstLine = $line;
                 break;
@@ -96,56 +79,71 @@ class DatasetService
         }
 
         if ($firstLine === '') {
-            fclose($handle);
-            throw new RuntimeException('El CSV está vacío.');
+            fclose($sourceHandle);
+            throw new RuntimeException('El archivo del dataset está vacío.');
         }
 
         $delimiter = $this->detectDelimiter($firstLine);
-        rewind($handle);
+        rewind($sourceHandle);
 
-        $headers = fgetcsv($handle, 0, $delimiter);
+        $headers = fgetcsv($sourceHandle, 0, $delimiter);
 
-        if (! is_array($headers) || count($headers) === 0) {
-            fclose($handle);
-            throw new RuntimeException('El CSV no contiene encabezados válidos.');
+        if (! is_array($headers) || $headers === []) {
+            fclose($sourceHandle);
+            throw new RuntimeException('No se pudieron leer los encabezados del dataset.');
         }
 
-        $headers = array_map(static fn ($header): string => trim((string) $header), $headers);
-        $headers = array_values(array_filter($headers, static fn (string $header): bool => $header !== ''));
+        $rows = [];
 
-        if ($headers === []) {
-            fclose($handle);
-            throw new RuntimeException('El CSV no contiene columnas válidas.');
-        }
-
-        $columnsCount = count($headers);
-        $rowsCount = 0;
-
-        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+        while (($row = fgetcsv($sourceHandle, 0, $delimiter)) !== false) {
             if ($this->isEmptyRow($row)) {
                 continue;
             }
 
-            if (count($row) !== $columnsCount) {
-                fclose($handle);
-                throw new RuntimeException('Las filas del CSV no tienen la misma cantidad de columnas que el encabezado.');
+            $rows[] = $row;
+        }
+
+        fclose($sourceHandle);
+
+        usort($rows, function (array $left, array $right): int {
+            $maxColumns = max(count($left), count($right));
+
+            for ($index = 0; $index < $maxColumns; $index++) {
+                $leftValue = trim((string) ($left[$index] ?? ''));
+                $rightValue = trim((string) ($right[$index] ?? ''));
+
+                $comparison = strnatcasecmp($leftValue, $rightValue);
+
+                if ($comparison !== 0) {
+                    return $comparison;
+                }
             }
 
-            $rowsCount++;
+            return 0;
+        });
+
+        $sortedFilePath = tempnam(sys_get_temp_dir(), 'dataset_sorted_');
+
+        if ($sortedFilePath === false) {
+            throw new RuntimeException('No se pudo crear un archivo temporal para la descarga.');
         }
 
-        fclose($handle);
+        $outputHandle = fopen($sortedFilePath, 'wb');
 
-        if ($rowsCount === 0) {
-            throw new RuntimeException('El CSV no contiene filas de datos.');
+        if ($outputHandle === false) {
+            throw new RuntimeException('No se pudo preparar la descarga del dataset.');
         }
 
-        return [
-            'rows_count' => $rowsCount,
-            'columns_count' => $columnsCount,
-            'headers' => $headers,
-            'delimiter' => $delimiter,
-        ];
+        fwrite($outputHandle, "\xEF\xBB\xBF");
+        fputcsv($outputHandle, $headers, self::DOWNLOAD_DELIMITER);
+
+        foreach ($rows as $row) {
+            fputcsv($outputHandle, $row, self::DOWNLOAD_DELIMITER);
+        }
+
+        fclose($outputHandle);
+
+        return $sortedFilePath;
     }
 
     private function detectDelimiter(string $line): string

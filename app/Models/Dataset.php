@@ -6,10 +6,11 @@ use App\Enums\DatasetStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Dataset extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -19,8 +20,9 @@ class Dataset extends Model
         'rows_count',
         'columns_count',
         'status',
-        'user_id',
+        'uploaded_by',
         'metadata',
+        'metrics',
     ];
 
     protected $casts = [
@@ -29,10 +31,11 @@ class Dataset extends Model
         'columns_count' => 'integer',
         'status' => DatasetStatus::class,
         'metadata' => 'array',
+        'metrics' => 'array',
     ];
 
     public function uploader(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'uploaded_by');
     }
 }
