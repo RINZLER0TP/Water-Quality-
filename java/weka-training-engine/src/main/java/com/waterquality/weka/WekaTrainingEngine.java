@@ -45,6 +45,8 @@ public class WekaTrainingEngine {
 
             if ("predict".equalsIgnoreCase(mode)) {
                 handlePredict(options);
+            } else if ("batch-predict".equalsIgnoreCase(mode)) {
+                handleBatchPredict(options);
             } else {
                 handleTrain(options);
             }
@@ -223,7 +225,81 @@ public class WekaTrainingEngine {
 
         long executionTimeMs = System.currentTimeMillis() - startedAt;
 
-        String json = buildPredictSuccessJson(predictedClassName, confidence, executionTimeMs);
+        String json = buildPredictSuccessJson(humanizePredictionLabel(predictedClassName), confidence, executionTimeMs);
+
+        writeLog(logPath, json);
+        System.out.println(json);
+    }
+
+    private static void handleBatchPredict(Map<String, String> options) throws Exception {
+        String modelPath = required(options, "model");
+        String csvPath = required(options, "csv");
+        String logPath = options.getOrDefault("log", "");
+        String targetColumn = options.getOrDefault("target", "Potability");
+        String trainingCsvPath = options.get("training-csv");
+
+        long startedAt = System.currentTimeMillis();
+
+        Classifier classifier = (Classifier) SerializationHelper.read(modelPath);
+
+        Instances trainingData = null;
+        if (trainingCsvPath != null && !trainingCsvPath.isBlank()) {
+            File trainingCsvFile = normalizePath(trainingCsvPath);
+            String trainingCsvContent = Files.readString(trainingCsvFile.toPath(), StandardCharsets.UTF_8);
+            trainingData = loadCsvFromText(trainingCsvContent);
+
+            int trainingClassIndex = attributeIndexByName(trainingData, targetColumn);
+            if (trainingClassIndex < 0) {
+                throw new IllegalStateException("No se encontró la columna objetivo en el CSV de entrenamiento: " + targetColumn);
+            }
+
+            trainingData.setClassIndex(trainingClassIndex);
+        }
+
+        Instances data = loadPredictionInstances(csvPath);
+
+        if (data.numInstances() == 0) {
+            throw new IllegalStateException("El CSV no contiene instancias para predecir.");
+        }
+
+        if (trainingData != null) {
+            data = alignPredictionData(trainingData, data, targetColumn);
+        } else {
+            int classIndex = attributeIndexByName(data, targetColumn);
+            if (classIndex < 0) {
+                throw new IllegalStateException("No se encontró la columna objetivo en el CSV de predicción: " + targetColumn);
+            }
+
+            data.setClassIndex(classIndex);
+        }
+
+        List<Map<String, Object>> predictions = new ArrayList<>();
+        int potableCount = 0;
+
+        for (int index = 0; index < data.numInstances(); index++) {
+            Instance instance = data.instance(index);
+            double predictedClass = classifier.classifyInstance(instance);
+            String predictedClassName = data.classAttribute().value((int) predictedClass);
+            String humanReadableClass = humanizePredictionLabel(predictedClassName);
+            double[] distribution = classifier.distributionForInstance(instance);
+            double confidence = distribution[(int) predictedClass];
+
+            if (isPotableLabel(predictedClassName)) {
+                potableCount++;
+            }
+
+            Map<String, Object> prediction = new LinkedHashMap<>();
+            prediction.put("row_number", index + 1);
+            prediction.put("class", humanReadableClass);
+            prediction.put("confidence", confidence);
+            predictions.add(prediction);
+        }
+
+        int total = data.numInstances();
+        int nonPotableCount = total - potableCount;
+        long executionTimeMs = System.currentTimeMillis() - startedAt;
+
+        String json = buildBatchPredictSuccessJson(predictions, total, potableCount, nonPotableCount, executionTimeMs);
 
         writeLog(logPath, json);
         System.out.println(json);
@@ -306,64 +382,105 @@ public class WekaTrainingEngine {
     }
 
     private static Instances alignPredictionData(Instances trainingData, Instances inputData, String targetColumn) {
-        Instances alignedData = new Instances(trainingData, 1);
+        Instances alignedData = new Instances(trainingData, inputData.numInstances());
         alignedData.setClassIndex(trainingData.classIndex());
 
-        Instance inputInstance = inputData.instance(0);
-        Instance alignedInstance = new DenseInstance(trainingData.numAttributes());
-        alignedInstance.setDataset(alignedData);
+        for (int rowIndex = 0; rowIndex < inputData.numInstances(); rowIndex++) {
+            Instance inputInstance = inputData.instance(rowIndex);
+            Instance alignedInstance = new DenseInstance(trainingData.numAttributes());
+            alignedInstance.setDataset(alignedData);
 
-        for (int index = 0; index < trainingData.numAttributes(); index++) {
-            Attribute targetAttribute = trainingData.attribute(index);
+            for (int index = 0; index < trainingData.numAttributes(); index++) {
+                Attribute targetAttribute = trainingData.attribute(index);
 
-            if (targetAttribute.name().equals(targetColumn)) {
-                alignedInstance.setMissing(targetAttribute);
-                continue;
-            }
-
-            int sourceIndex = attributeIndexByName(inputData, targetAttribute.name());
-            if (sourceIndex < 0) {
-                throw new IllegalStateException("No se encontró el atributo requerido para la predicción: " + targetAttribute.name());
-            }
-
-            Attribute sourceAttribute = inputData.attribute(sourceIndex);
-
-            if (inputInstance.isMissing(sourceAttribute)) {
-                alignedInstance.setMissing(targetAttribute);
-                continue;
-            }
-
-            if (targetAttribute.isNumeric()) {
-                alignedInstance.setValue(targetAttribute, inputInstance.value(sourceAttribute));
-                continue;
-            }
-
-            String stringValue = inputInstance.stringValue(sourceAttribute).trim();
-            if (stringValue.isEmpty()) {
-                alignedInstance.setMissing(targetAttribute);
-                continue;
-            }
-
-            if (targetAttribute.isNominal()) {
-                if (targetAttribute.indexOfValue(stringValue) < 0) {
-                    throw new IllegalStateException("El valor '" + stringValue + "' no es válido para el atributo " + targetAttribute.name());
+                if (targetAttribute.name().equals(targetColumn)) {
+                    alignedInstance.setMissing(targetAttribute);
+                    continue;
                 }
 
-                alignedInstance.setValue(targetAttribute, stringValue);
-                continue;
+                int sourceIndex = attributeIndexByName(inputData, targetAttribute.name());
+                if (sourceIndex < 0) {
+                    throw new IllegalStateException("No se encontró el atributo requerido para la predicción: " + targetAttribute.name());
+                }
+
+                Attribute sourceAttribute = inputData.attribute(sourceIndex);
+
+                if (inputInstance.isMissing(sourceAttribute)) {
+                    alignedInstance.setMissing(targetAttribute);
+                    continue;
+                }
+
+                if (targetAttribute.isNumeric()) {
+                    alignedInstance.setValue(targetAttribute, inputInstance.value(sourceAttribute));
+                    continue;
+                }
+
+                String stringValue = inputInstance.stringValue(sourceAttribute).trim();
+                if (stringValue.isEmpty()) {
+                    alignedInstance.setMissing(targetAttribute);
+                    continue;
+                }
+
+                if (targetAttribute.isNominal()) {
+                    if (targetAttribute.indexOfValue(stringValue) < 0) {
+                        throw new IllegalStateException("El valor '" + stringValue + "' no es válido para el atributo " + targetAttribute.name());
+                    }
+
+                    alignedInstance.setValue(targetAttribute, stringValue);
+                    continue;
+                }
+
+                if (targetAttribute.isString()) {
+                    alignedInstance.setValue(targetAttribute, stringValue);
+                    continue;
+                }
+
+                throw new IllegalStateException("Tipo de atributo no soportado para la predicción: " + targetAttribute.name());
             }
 
-            if (targetAttribute.isString()) {
-                alignedInstance.setValue(targetAttribute, stringValue);
-                continue;
-            }
-
-            throw new IllegalStateException("Tipo de atributo no soportado para la predicción: " + targetAttribute.name());
+            alignedData.add(alignedInstance);
         }
 
-        alignedData.add(alignedInstance);
-
         return alignedData;
+    }
+
+    private static Instances loadPredictionInstances(String csvPath) throws Exception {
+        if ("stdin".equalsIgnoreCase(csvPath) || "-".equals(csvPath)) {
+            String csvContent = new String(System.in.readAllBytes(), StandardCharsets.UTF_8);
+
+            if (csvContent.isBlank()) {
+                throw new IllegalStateException("CSV vacío recibido por stdin; el proceso Java no recibió datos de entrada.");
+            }
+
+            return loadCsvFromText(csvContent);
+        }
+
+        File csvFile = normalizePath(csvPath);
+        String csvContent = Files.readString(csvFile.toPath(), StandardCharsets.UTF_8);
+        return loadCsvFromText(csvContent);
+    }
+
+    private static boolean isPotableLabel(String label) {
+        String normalized = label == null ? "" : label.trim().toLowerCase();
+        return normalized.equals("1") || normalized.equals("true") || normalized.equals("yes") || normalized.equals("potable") || normalized.equals("safe") || normalized.equals("si") || normalized.equals("sí");
+    }
+
+    private static String humanizePredictionLabel(String label) {
+        String normalized = label == null ? "" : label.trim().toLowerCase();
+
+        if (normalized.isEmpty()) {
+            return "No Potable";
+        }
+
+        if (normalized.equals("1") || normalized.equals("true") || normalized.equals("yes") || normalized.equals("potable") || normalized.equals("safe") || normalized.equals("si") || normalized.equals("sí")) {
+            return "Potable";
+        }
+
+        if (normalized.equals("0") || normalized.equals("false") || normalized.equals("no") || normalized.equals("not potable") || normalized.equals("no potable")) {
+            return "No Potable";
+        }
+
+        return label;
     }
 
     private static String buildPredictSuccessJson(String predictedClass, double confidence, long executionTimeMs) {
@@ -375,6 +492,37 @@ public class WekaTrainingEngine {
                 "\"execution_time_ms\":" + executionTimeMs +
                 "}" +
                 "}";
+    }
+
+    private static String buildBatchPredictSuccessJson(List<Map<String, Object>> predictions, int total, int potableCount, int nonPotableCount, long executionTimeMs) {
+        StringBuilder builder = new StringBuilder();
+        builder.append('{');
+        builder.append("\"success\":true,");
+        builder.append("\"total\":").append(total).append(',');
+        builder.append("\"summary\":{");
+        builder.append("\"potable\":").append(potableCount).append(',');
+        builder.append("\"non_potable\":").append(nonPotableCount);
+        builder.append("},");
+        builder.append("\"execution_time_ms\":").append(executionTimeMs).append(',');
+        builder.append("\"predictions\":[");
+
+        for (int index = 0; index < predictions.size(); index++) {
+            Map<String, Object> prediction = predictions.get(index);
+            if (index > 0) {
+                builder.append(',');
+            }
+
+            builder.append('{');
+            builder.append("\"row_number\":").append(prediction.get("row_number")).append(',');
+            builder.append("\"class\":").append(jsonString(String.valueOf(prediction.get("class")))).append(',');
+            builder.append("\"confidence\":").append(prediction.get("confidence"));
+            builder.append('}');
+        }
+
+        builder.append(']');
+        builder.append('}');
+
+        return builder.toString();
     }
 
     private static String buildSuccessJson(

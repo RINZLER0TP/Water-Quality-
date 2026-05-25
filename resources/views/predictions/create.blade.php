@@ -1,7 +1,7 @@
 <x-app-layout>
     <div class="py-8 sm:py-10">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8" style="animation: cardIn 0.7s 0.1s cubic-bezier(0.22, 0.68, 0, 1.15) forwards; opacity: 0; transform: translateY(28px);">
-            
+
             <div class="flex items-center gap-4">
                 <a href="{{ route('predictions.index') }}" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-500 shadow-sm border border-slate-100 hover:bg-slate-50 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -10,6 +10,48 @@
                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-500 mb-1">Nuevo Análisis</p>
                     <h2 class="text-3xl font-semibold tracking-tight text-slate-900 font-['Space_Grotesk']">Ejecutar Predicción</h2>
                 </div>
+                <div class="ml-auto">
+                    <a href="{{ route('predictions.dataset') }}" class="inline-flex items-center px-4 py-2 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition-colors">
+                        Ir a predicción del dataset
+                    </a>
+                </div>
+            </div>
+
+            <div class="water-panel rounded-[32px] p-8">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500 mb-1">Predicción por dataset</p>
+                        <h3 class="text-2xl font-semibold tracking-tight text-slate-900 font-['Space_Grotesk']">Usa automáticamente el dataset asociado al modelo</h3>
+                        <p class="mt-1 text-sm text-slate-500">Selecciona un modelo entrenado y el sistema toma el dataset con el que fue creado para predecir todas sus filas.</p>
+                    </div>
+                </div>
+
+                <form action="{{ route('predictions.dataset.store') }}" method="POST" class="space-y-6">
+                    @csrf
+
+                    <div>
+                        <label for="dataset_training_job_id" class="block text-sm font-semibold text-slate-900 mb-2">Modelo entrenado</label>
+                        <select name="training_job_id" id="dataset_training_job_id" required class="mt-1 block w-full rounded-2xl border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm p-3 shadow-sm">
+                            <option value="" disabled selected>Elige uno...</option>
+                            @foreach($activeModels as $model)
+                                <option value="{{ $model->id }}" {{ old('training_job_id') == $model->id ? 'selected' : '' }}>
+                                    #{{ $model->id }} - {{ $model->algorithm->value }} · Dataset: {{ $model->trainingConfiguration?->dataset?->name ?? 'Sin nombre' }} · Accuracy: {{ number_format(data_get($model->metrics, 'accuracy', 0) * 100, 1) }}%
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('training_job_id') <p class="mt-2 text-sm text-rose-500">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-800">
+                        El sistema usará automáticamente el dataset con el que se entrenó el modelo para predecir si cada fila es potable o no.
+                    </div>
+
+                    <div class="flex justify-end gap-3">
+                        <button type="submit" @if($activeModels->isEmpty()) disabled @endif class="inline-flex justify-center items-center px-8 py-3 border border-transparent text-sm font-semibold rounded-full shadow-lg text-white bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-600 hover:to-teal-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Ejecutar predicción del dataset &rarr;
+                        </button>
+                    </div>
+                </form>
             </div>
 
             <form action="{{ route('predictions.store') }}" method="POST" class="space-y-6">
@@ -44,7 +86,7 @@
                     <div>
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6">
                             <div>
-                                <h3 class="text-lg font-semibold text-slate-900 font-['Space_Grotesk']">Datos del agua</h3>
+                                <h3 class="text-lg font-semibold text-slate-900 font-['Space_Grotesk']">Datos personalizados</h3>
                                 <p class="mt-1 text-sm text-slate-500">Puedes cargar ejemplos y cambiar sólo lo necesario.</p>
                             </div>
                             <button type="button" id="fill-water-sample" class="inline-flex items-center justify-center px-4 py-2 rounded-full border border-sky-200 bg-sky-50 text-sky-700 text-sm font-semibold hover:bg-sky-100 transition-colors">

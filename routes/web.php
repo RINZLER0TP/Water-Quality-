@@ -86,6 +86,8 @@ Route::middleware('auth')->group(function () {
     // Route::resource('water-samples', \App\Http\Controllers\WaterSampleController::class);
     
     // Predicciones Weka
+    Route::get('/predictions/dataset', [\App\Http\Controllers\PredictionController::class, 'dataset'])->name('predictions.dataset');
+    Route::post('/predictions/dataset', [\App\Http\Controllers\PredictionController::class, 'storeDataset'])->name('predictions.dataset.store');
     Route::resource('predictions', \App\Http\Controllers\PredictionController::class)->only(['index', 'create', 'store', 'show']);
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

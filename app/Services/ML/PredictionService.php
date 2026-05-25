@@ -86,6 +86,58 @@ class PredictionService
         }
     }
 
+    public function predictDataset(TrainingJob $job): array
+    {
+        $this->extendExecutionTimeLimit();
+        $job->loadMissing(['trainingConfiguration.dataset']);
+
+        if (empty($job->model_path) || !File::exists(Storage::disk('local')->path($job->model_path))) {
+            throw new \RuntimeException("El modelo Weka no se encontró en el servidor: {$job->model_path}");
+        }
+
+        $trainingDataset = $job->trainingConfiguration?->dataset;
+
+        if (! $trainingDataset) {
+            throw new \RuntimeException('No se encontró el dataset de entrenamiento asociado al job de predicción.');
+        }
+
+        $modelPath = Storage::disk('local')->path($job->model_path);
+        $trainingCsvPath = Storage::disk('local')->path($trainingDataset->file_path);
+
+        $runtimeModelPath = $this->copyToRuntimeTemp($modelPath, 'weka_model_' . $job->id . '_' . Str::uuid() . '.model');
+        $runtimeTrainingCsvPath = $this->copyToRuntimeTemp($trainingCsvPath, 'weka_training_dataset_' . $job->id . '_' . Str::uuid() . '.csv');
+
+        try {
+            $jarPath = (string) config('weka.jar_path');
+
+            $args = [
+                '--mode=batch-predict',
+                '--model=' . $runtimeModelPath,
+                '--training-csv=' . $runtimeTrainingCsvPath,
+                '--csv=' . $runtimeTrainingCsvPath,
+                '--target=' . $job->target_column,
+            ];
+
+            $output = $this->client->runJar($jarPath, $args, 60);
+            $result = json_decode($this->extractJsonPayload($output), true);
+
+            if (! $result || !isset($result['success']) || ! $result['success']) {
+                $error = $result['error'] ?? 'Error desconocido al procesar JSON';
+                throw new \RuntimeException("Fallo en predicción del dataset Weka: $error");
+            }
+
+            return $result;
+        } finally {
+            if (File::exists($runtimeModelPath)) {
+                File::delete($runtimeModelPath);
+            }
+
+            if (File::exists($runtimeTrainingCsvPath)) {
+                File::delete($runtimeTrainingCsvPath);
+            }
+        }
+    }
+
     private function buildCsvContent(array $inputData, string $targetColumn, array $trainingHeaders): string
     {
         $handle = fopen('php://temp', 'r+');

@@ -94,9 +94,18 @@
                         <h4 class="text-xs font-bold uppercase tracking-[0.1em] text-sky-500 mb-4">Parámetros Analizados</h4>
                         <div class="grid grid-cols-2 gap-x-4 gap-y-3">
                             @foreach($prediction->input_data as $key => $value)
+                                @php
+                                    if (is_array($value) || is_object($value)) {
+                                        $displayValue = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                                    } elseif ($value === null) {
+                                        $displayValue = '-';
+                                    } else {
+                                        $displayValue = (string) $value;
+                                    }
+                                @endphp
                                 <div class="bg-slate-50/50 p-2 rounded-xl">
                                     <span class="block text-[10px] font-semibold uppercase text-slate-400">{{ str_replace('_', ' ', $key) }}</span>
-                                    <span class="block text-sm font-medium text-slate-900">{{ $value }}</span>
+                                    <span class="block text-sm font-medium text-slate-900">{{ $displayValue }}</span>
                                 </div>
                             @endforeach
                         </div>

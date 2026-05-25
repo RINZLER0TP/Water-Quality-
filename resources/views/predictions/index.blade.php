@@ -36,6 +36,7 @@
                                     <th class="px-6 py-4">ID</th>
                                     <th class="px-6 py-4">Modelo Usado</th>
                                     <th class="px-6 py-4">Fecha</th>
+                                    <th class="px-6 py-4">Fuente</th>
                                     <th class="px-6 py-4">Confianza</th>
                                     <th class="px-6 py-4">Resultado</th>
                                     <th class="px-6 py-4 text-right">Acción</th>
@@ -53,6 +54,13 @@
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 text-slate-500">{{ $prediction->created_at->format('d M Y, H:i') }}</td>
+                                        <td class="px-6 py-4 text-slate-500">
+                                            @if(data_get($prediction->input_data, 'batch') === true)
+                                                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">Dataset cargado</span>
+                                            @else
+                                                <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-700">Personalizada</span>
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4">
                                             @if($prediction->confidence)
                                                 <div class="flex items-center gap-2">
